@@ -556,7 +556,7 @@ class AudioBuffer
 	}
 }
 
-@:enum abstract AudioCodec(Int) from Int to Int {
+enum abstract AudioCodec(Int) from Int to Int {
 	var unknown = 0;
 	var vorbis = 1;
 	var flac = 2;

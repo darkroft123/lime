@@ -474,7 +474,6 @@ class NativeWindow
 		}
 	}
 
-	#if (lime >= "8.1.0")
 	public function setMinSize(width:Int, height:Int):Void
 	{
 		if (handle != null)
@@ -494,7 +493,6 @@ class NativeWindow
 			#end
 		}
 	}
-	#end
 
 	public function setBorderless(value:Bool):Bool
 	{
@@ -704,7 +702,6 @@ class NativeWindow
 		return value;
 	}
 
-	#if (lime >= "8.1.0")
 	public function setVisible(value:Bool):Bool
 	{
 		if (handle != null)
@@ -751,7 +748,6 @@ class NativeWindow
 			#end
 		}
 	}
-	#end
 
 	public function warpMouse(x:Int, y:Int):Void
 	{
