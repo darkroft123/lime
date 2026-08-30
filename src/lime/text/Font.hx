@@ -281,7 +281,7 @@ class Font
 		var glyphList = _glyphList;
 		#end
 
-		NativeCFFI.lime_font_set_size(src, fontSize);
+		NativeCFFI.lime_font_set_size(src, fontSize, 0);
 
 		var bytes = Bytes.alloc(0);
 		bytes = NativeCFFI.lime_font_render_glyphs(src, glyphList, bytes);
@@ -592,7 +592,7 @@ class Font
 	@:noCompletion private function __setSize(size:Int):Void
 	{
 		#if (lime_cffi && !macro)
-		NativeCFFI.lime_font_set_size(src, size);
+		NativeCFFI.lime_font_set_size(src, size, 0);
 		#end
 	}
 }
