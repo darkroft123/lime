@@ -115,6 +115,13 @@ abstract Bytes(HaxeBytes) from HaxeBytes to HaxeBytes
 		return request.load(path);
 	}
 
+	public static function toFile(path:String, bytes:Bytes):Void
+	{
+		#if (sys && lime_cffi && !macro)
+		NativeCFFI.lime_bytes_write_file(path, bytes);
+		#end
+	}
+
 	public static function ofData(b:BytesData):Bytes
 	{
 		var bytes = HaxeBytes.ofData(b);

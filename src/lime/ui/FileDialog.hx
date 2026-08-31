@@ -1,207 +1,210 @@
 package lime.ui;
 
+import haxe.io.Path;
+import lime.system.CFFI;
 import lime._internal.backend.native.NativeCFFI;
-import lime.app.Event;
-import lime.graphics.Image;
-import lime.system.BackgroundWorker;
-import lime.utils.Resource;
-#if sys
-import sys.io.File;
-#end
-#if (js && html5)
-import js.html.Blob;
-#end
 
+/**
+	File dialog for opening files, saving files, and selecting directories.
+
+	Example usage:
+	```haxe
+		FileDialog.openFile(Application.current.window, (files, filter) -> {
+			if (files.length > 0) {
+				trace('Selected file: ' + files[0]);
+				if (filter != null)
+					trace('Filter used: ' + filter.name);
+			}
+		}, [
+			new FileDialogFilter("PNG images", "png"),
+			new FileDialogFilter("All files", "*")
+		], Sys.getCwd());
+	```
+**/
 #if !lime_debug
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
 @:access(lime._internal.backend.native.NativeCFFI)
-@:access(lime.graphics.Image)
+@:access(lime.ui.Window)
 class FileDialog
 {
-	public var onCancel = new Event<Void->Void>();
-	public var onOpen = new Event<Resource->Void>();
-	public var onSave = new Event<String->Void>();
-	public var onSelect = new Event<String->Void>();
-	public var onSelectMultiple = new Event<Array<String>->Void>();
-
-	public function new() {}
-
-	public function browse(type:FileDialogType = null, filter:String = null, defaultPath:String = null, title:String = null):Bool
+	/**
+		Opens a directory selection dialog. If successful, `callback` will be called with the selected directory paths.
+		@param window        The parent window for the dialog.
+		@param title         The title for the dialog.
+		@param callback      Called with the list of selected directories when the dialog is confirmed, or an empty array if the user cancelled.
+		@param defaultPath   The default folder or file to start the dialog at. Defaults to `Sys.getCwd()`.
+		@param allowMultiple Whether the user can select multiple directories.
+	**/
+	public static function openDirectory(window:Window = null, title:String = null, callback:Array<String>->Void = null, defaultPath:String = null, allowMultiple:Bool = false):Void
 	{
-		if (type == null) type = FileDialogType.OPEN;
-
-		#if desktop
-		var worker = new BackgroundWorker();
-
-		worker.doWork.add(function(_)
+		#if (lime_cffi && !macro)
+		if (defaultPath == null)
 		{
-			switch (type)
-			{
-				case OPEN:
-					#if linux
-					if (title == null) title = "Open File";
-					#end
-					var path:String = null;
-					#if (!macro && lime_cffi)
-					NativeCFFI.lime_file_dialog_open_file(null, title, null, null, null, 0, defaultPath != null ? defaultPath : "", true);
-					#end
-					worker.sendComplete(path);
+			defaultPath = Sys.getCwd();
+		}
 
-				case OPEN_MULTIPLE:
-					#if linux
-					if (title == null) title = "Open Files";
-					#end
-					var paths:Array<String> = null;
-					worker.sendComplete(paths);
-
-				case OPEN_DIRECTORY:
-					#if linux
-					if (title == null) title = "Open Directory";
-					#end
-					var path:String = null;
-					#if (!macro && lime_cffi)
-					NativeCFFI.lime_file_dialog_open_directory(null, title, null, defaultPath != null ? defaultPath : "", true);
-					#end
-					worker.sendComplete(path);
-
-				case SAVE:
-					#if linux
-					if (title == null) title = "Save File";
-					#end
-					var path:String = null;
-					#if (!macro && lime_cffi)
-					NativeCFFI.lime_file_dialog_save_file(null, title, null, null, null, 0, defaultPath != null ? defaultPath : "");
-					#end
-					worker.sendComplete(path);
-			}
-		});
-
-		worker.onComplete.add(function(result)
+		#if hl
+		var dialogCallback = function(list:hl.NativeArray<hl.Bytes>):Void
 		{
-			switch (type)
+			if (callback != null)
 			{
-				case OPEN, OPEN_DIRECTORY, SAVE:
-					var path:String = cast result;
-					if (path != null)
-					{
-						if (type == SAVE && filter != null && path.indexOf(".") == -1) path += "." + filter;
-						onSelect.dispatch(path);
-					}
-					else onCancel.dispatch();
-
-				case OPEN_MULTIPLE:
-					var paths:Array<String> = cast result;
-					if (paths != null && paths.length > 0) onSelectMultiple.dispatch(paths);
-					else onCancel.dispatch();
+				callback([for (i in 0...list.length) CFFI.stringValue(list[i])]);
 			}
-		});
-
-		worker.run();
-		return true;
+		}
 		#else
-		onCancel.dispatch();
-		return false;
+		var dialogCallback = function(list:Array<String>):Void
+		{
+			if (callback != null)
+			{
+				callback(list);
+			}
+		}
+		#end
+
+		NativeCFFI.lime_file_dialog_open_directory(window.__backend.handle, title, dialogCallback, defaultPath, allowMultiple);
 		#end
 	}
 
-	public function open(filter:String = null, defaultPath:String = null, title:String = null):Bool
+	/**
+		Opens a file selection dialog. If successful, `callback` will be called with the selected file paths and the filter that was active when the user confirmed.
+		@param window        The parent window for the dialog.
+		@param title         The title for the dialog.
+		@param callback      Called with the list of selected files and the active `FileDialogFilter` when the dialog is confirmed, or an empty array and `null` if the user cancelled.
+		@param filters       A list of `FileDialogFilter` to show in the dialog's filter dropdown. If `null`, no filter is applied.
+		@param defaultPath   The default folder or file to start the dialog at. Defaults to `Sys.getCwd()`.
+		@param allowMultiple Whether the user can select multiple files.
+	**/
+	public static function openFile(window:Window = null, title:String = null, callback:Array<String>->FileDialogFilter->Void = null, filters:Array<FileDialogFilter> = null,
+			defaultPath:String = null, ?allowMultiple:Bool = false):Void
 	{
-		#if (desktop && sys)
-		var worker = new BackgroundWorker();
-
-		worker.doWork.add(function(_)
+		#if (lime_cffi && !macro)
+		if (defaultPath == null)
 		{
-			#if linux
-			if (title == null) title = "Open File";
-			#end
-			var path:String = null;
-			#if (!macro && lime_cffi)
-			NativeCFFI.lime_file_dialog_open_file(null, title, null, null, null, 0, defaultPath != null ? defaultPath : "", false);
-			#end
-			worker.sendComplete(path);
-		});
+			defaultPath = Sys.getCwd();
+		}
 
-		worker.onComplete.add(function(path:String)
+		var count = filters != null ? filters.length : 0;
+
+		#if hl
+		var names = new hl.NativeArray<String>(count);
+		var patterns = new hl.NativeArray<String>(count);
+
+		for (i in 0...count)
 		{
-			if (path != null)
+			names[i] = filters[i].name;
+			patterns[i] = filters[i].pattern;
+		}
+
+		var dialogCallback = function(list:hl.NativeArray<hl.Bytes>, filterIndex:Int):Void
+		{
+			if (callback != null)
 			{
-				try
-				{
-					var data = File.getBytes(path);
-					onOpen.dispatch(data);
-					return;
-				}
-				catch (e:Dynamic) {}
+				callback([for (i in 0...list.length) CFFI.stringValue(list[i])], filters != null ? filters[filterIndex] : null);
 			}
-			onCancel.dispatch();
-		});
-
-		worker.run();
-		return true;
+		}
 		#else
-		onCancel.dispatch();
-		return false;
+		var names = filters != null ? filters.map(f -> f.name) : [];
+		var patterns = filters != null ? filters.map(f -> f.pattern) : [];
+
+		var dialogCallback = function(filelist:Array<String>, filterIndex:Int):Void
+		{
+			if (callback != null)
+			{
+				callback(filelist, filters != null ? filters[filterIndex] : null);
+			}
+		}
+		#end
+
+		NativeCFFI.lime_file_dialog_open_file(window.__backend.handle, title, dialogCallback, names, patterns, count, defaultPath, allowMultiple);
 		#end
 	}
 
-	public function save(data:Resource, filter:String = null, defaultPath:String = null, title:String = null, type:String = "application/octet-stream"):Bool
+	/**
+		Opens a save file dialog. If successful, `callback` will be called with the selected path and the filter that was active when the user confirmed.
+		@param window      The parent window for the dialog.
+		@param title       The title for the dialog.
+		@param callback    Called with the selected save path and the active `FileDialogFilter` when the dialog is confirmed, or `null` if the user cancelled.
+		@param filters     A list of `FileDialogFilter` to show in the dialog's filter dropdown. If `null`, no filter is applied.
+		@param defaultPath The default folder or file to start the dialog at. Defaults to `Sys.getCwd()`.
+	**/
+	public static function saveFile(window:Window = null, title:String = null, callback:String->FileDialogFilter->Void = null, filters:Array<FileDialogFilter> = null,
+			defaultPath:String = null):Void
 	{
-		if (data == null) { onCancel.dispatch(); return false; }
-
-		#if (desktop && sys)
-		var worker = new BackgroundWorker();
-
-		worker.doWork.add(function(_)
+		#if (lime_cffi && !macro)
+		if (defaultPath == null)
 		{
-			#if linux
-			if (title == null) title = "Save File";
-			#end
-			var path:String = null;
-			#if (!macro && lime_cffi)
-			NativeCFFI.lime_file_dialog_save_file(null, title, null, null, null, 0, defaultPath != null ? defaultPath : "");
-			#end
-			worker.sendComplete(path);
-		});
+			defaultPath = Sys.getCwd();
+		}
 
-		worker.onComplete.add(function(path:String)
+		var count = filters != null ? filters.length : 0;
+
+		#if hl
+		var names = new hl.NativeArray<String>(count);
+		var patterns = new hl.NativeArray<String>(count);
+
+		for (i in 0...count)
 		{
-			if (path != null)
+			names[i] = filters[i].name;
+			patterns[i] = filters[i].pattern;
+		}
+
+		var dialogCallback = function(filename:hl.Bytes, filterIndex:Int):Void
+		{
+			if (callback != null)
 			{
-				try
-				{
-					File.saveBytes(path, data);
-					onSave.dispatch(path);
-					return;
-				}
-				catch (e:Dynamic) {}
+				var filter = filters != null && filterIndex >= 0 ? filters[filterIndex] : null;
+
+				callback(__applySaveFilterExtension(filename != null ? CFFI.stringValue(filename) : null, filter), filter);
 			}
-			onCancel.dispatch();
-		});
-
-		worker.run();
-		return true;
-		#elseif (js && html5)
-		var defaultExtension = "";
-		if (Image.__isPNG(data)) { type = "image/png"; defaultExtension = ".png"; }
-		else if (Image.__isJPG(data)) { type = "image/jpeg"; defaultExtension = ".jpg"; }
-		else if (Image.__isGIF(data)) { type = "image/gif"; defaultExtension = ".gif"; }
-		else if (Image.__isWebP(data)) { type = "image/webp"; defaultExtension = ".webp"; }
-
-		var path = defaultPath != null ? haxe.io.Path.withoutDirectory(defaultPath) : "download" + defaultExtension;
-		var buffer = (data : haxe.io.Bytes).getData();
-		buffer = buffer.slice(0, (data : haxe.io.Bytes).length);
-		#if commonjs
-		untyped #if haxe4 js.Syntax.code #else __js__ #end ("require ('file-saver')")(new Blob([buffer], {type: type}), path, true);
+		}
 		#else
-		untyped window.saveAs(new Blob([buffer], {type: type}), path, true);
+		var names = filters != null ? filters.map(f -> f.name) : [];
+		var patterns = filters != null ? filters.map(f -> f.pattern) : [];
+
+		var dialogCallback = function(filename:String, filterIndex:Int):Void
+		{
+			if (callback != null)
+			{
+				var filter = filters != null && filterIndex >= 0 ? filters[filterIndex] : null;
+
+				callback(__applySaveFilterExtension(filename, filter), filter);
+			}
+		}
 		#end
-		onSave.dispatch(path);
-		return true;
-		#else
-		onCancel.dispatch();
-		return false;
+
+		NativeCFFI.lime_file_dialog_save_file(window.__backend.handle, title, dialogCallback, names, patterns, count, defaultPath);
 		#end
+	}
+
+	@:noCompletion
+	private static function __applySaveFilterExtension(path:String, filter:FileDialogFilter):String
+	{
+		if (path == null)
+		{
+			return null;
+		}
+
+		if (!Path.isAbsolute(path)
+			|| filter == null
+			|| (filter.pattern == null || filter.pattern.length == 0)
+			|| (filter.pattern != null && filter.pattern == '*'))
+		{
+			return path;
+		}
+
+		var extension:String = Path.extension(path);
+		var patterns:Array<String> = filter.pattern.split(';');
+
+		var extensionLower:String = extension.toLowerCase();
+		var patternsLower:Array<String> = patterns.map(f -> f.toLowerCase());
+
+		if (patterns.length == 1 || extension.length == 0 || !patternsLower.contains(extensionLower))
+		{
+			path = Path.withExtension(path, patterns[0]);
+		}
+
+		return path;
 	}
 }
