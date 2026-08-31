@@ -1,8 +1,8 @@
 package lime.media;
 
+import lime.system.System;
 import haxe.io.Bytes;
 import haxe.io.Path;
-import haxe.Int64;
 import lime._internal.backend.native.NativeCFFI;
 import lime._internal.format.Base64;
 import lime.app.Future;
@@ -22,6 +22,13 @@ import js.html.Audio;
 import flash.media.Sound;
 import flash.net.URLRequest;
 #end
+#if cpp
+import cpp.vm.Gc;
+#elseif hl
+import hl.Gc;
+#elseif neko
+import neko.vm.Gc;
+#end
 
 @:access(lime._internal.backend.native.NativeCFFI)
 @:access(lime.utils.Assets)
@@ -32,53 +39,19 @@ import flash.net.URLRequest;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-
-/**
-	The `AudioBuffer` class represents a buffer of audio data that can be played back using an `AudioSource`. 
-	It supports a variety of audio formats and platforms, providing a consistent API for loading and managing audio data.
-
-	Depending on the platform, the audio backend may differ, but the class provides a unified interface for accessing 
-	audio data, whether it's stored in memory, loaded from a file, or streamed.
-
-	@see lime.media.AudioSource
-**/
 class AudioBuffer
 {
-	/**
-		The number of bits per sample in the audio data.
-	**/
 	public var bitsPerSample:Int;
-
-	/**
-		The number of audio channels (e.g., 1 for mono, 2 for stereo).
-	**/
 	public var channels:Int;
-
-	/**
-		The raw audio data stored as a `UInt8Array`.
-	**/
 	public var data:UInt8Array;
-
-	/**
-		The sample rate of the audio data, in Hz.
-	**/
 	public var sampleRate:Int;
-
-	/**
-		The source of the audio data. This can be an `Audio`, `Sound`, `Howl`, or other platform-specific object.
-	**/
 	public var src(get, set):Dynamic;
-
-	/**
-		Reference to the decoder used to create this buffer.
-	**/
-	public var decoder:AudioDecoder;
 
 	@:noCompletion private var __srcAudio:#if (js && html5) Audio #else Dynamic #end;
 	@:noCompletion private var __srcBuffer:#if lime_cffi ALBuffer #else Dynamic #end;
 	@:noCompletion private var __srcCustom:Dynamic;
 	@:noCompletion private var __srcHowl:#if lime_howlerjs Howl #else Dynamic #end;
-	@:noCompletion private var __srcSound:#if flash Sound #else Dynamic #end;
+	@:noCompletion private var __srcSound: Dynamic;
 	@:noCompletion private var __srcVorbisFile:#if lime_vorbis VorbisFile #else Dynamic #end;
 
 	#if commonjs
@@ -92,36 +65,19 @@ class AudioBuffer
 	}
 	#end
 
-	/**
-		Creates a new, empty `AudioBuffer` instance.
-	**/
 	public function new() {}
 
-	/**
-		Disposes of the resources used by this `AudioBuffer`, such as unloading any associated audio data.
-	**/
+
 	public function dispose():Void
 	{
 		#if (js && html5 && lime_howlerjs)
-		if (__srcHowl != null) __srcHowl.unload();
-		__srcHowl = null;
+		__srcHowl.unload();
 		#end
 		#if lime_cffi
-		if (__srcBuffer != null) AL.deleteBuffer(__srcBuffer);
-		__srcBuffer = null;
-		#end
-		#if lime_vorbis
-		if (__srcVorbisFile != null) __srcVorbisFile.clear();
-		__srcVorbisFile = null;
+		AL.deleteBuffer(__srcBuffer);
 		#end
 	}
 
-	/**
-		Creates an `AudioBuffer` from a Base64-encoded string.
-
-		@param base64String The Base64-encoded audio data.
-		@return An `AudioBuffer` instance with the decoded audio data.
-	**/
 	public static function fromBase64(base64String:String):AudioBuffer
 	{
 		if (base64String == null) return null;
@@ -134,7 +90,7 @@ class AudioBuffer
 		}
 
 		var audioBuffer = new AudioBuffer();
-		audioBuffer.src = new Howl({src: [base64String], preload: false});
+		audioBuffer.src = new Howl({src: [base64String], html5: true, preload: false});
 		return audioBuffer;
 		#elseif (lime_cffi && !macro)
 		#if !cs
@@ -168,28 +124,16 @@ class AudioBuffer
 		return null;
 	}
 
-	/**
-		Creates an `AudioBuffer` from a `Bytes` object.
-
-		@param bytes The `Bytes` object containing the audio data.
-		@return An `AudioBuffer` instance with the decoded audio data.
-	**/
 	public static function fromBytes(bytes:Bytes):AudioBuffer
 	{
 		if (bytes == null) return null;
 
 		#if (js && html5 && lime_howlerjs)
 		var audioBuffer = new AudioBuffer();
-		audioBuffer.src = new Howl({src: ["data:" + __getCodec(bytes) + ";base64," + Base64.encode(bytes)], preload: false});
+		audioBuffer.src = new Howl({src: ["data:" + __getCodec(bytes) + ";base64," + Base64.encode(bytes)], html5: true, preload: false});
 
 		return audioBuffer;
 		#elseif (lime_cffi && !macro)
-		#if lime_vorbis // CNE
-		//if (funkin.options.Options.streamedMusic) {
-			var vorbisFile = VorbisFile.fromBytes(bytes);
-			if (vorbisFile != null) return fromVorbisFile(vorbisFile);
-		//}
-		#end
 		#if !cs
 		var audioBuffer = new AudioBuffer();
 		audioBuffer.data = new UInt8Array(Bytes.alloc(0));
@@ -213,13 +157,7 @@ class AudioBuffer
 		return null;
 	}
 
-	/**
-		Creates an `AudioBuffer` from a file.
-
-		@param path The file path to the audio data.
-		@return An `AudioBuffer` instance with the audio data loaded from the file.
-	**/
-	public static function fromFile(path:String #if (js && html5 && lime_howlerjs), ?howlHtml5 = false #end):AudioBuffer
+	public static function fromFile(path:String):AudioBuffer
 	{
 		if (path == null) return null;
 
@@ -229,7 +167,7 @@ class AudioBuffer
 		#if force_html5_audio
 		audioBuffer.__srcHowl = new Howl({src: [path], html5: true, preload: false});
 		#else
-		audioBuffer.__srcHowl = new Howl({src: [path], html5: howlHtml5, preload: false});
+		audioBuffer.__srcHowl = new Howl({src: [path], preload: false});
 		#end
 
 		return audioBuffer;
@@ -249,9 +187,6 @@ class AudioBuffer
 		var audioBuffer = new AudioBuffer();
 		audioBuffer.data = new UInt8Array(Bytes.alloc(0));
 
-		//audioBuffer = NativeCFFI.lime_audio_load_file(path, audioBuffer);
-		//if (audioBuffer != null) audioBuffer.initBuffer();
-		//return audioBuffer;
 		return NativeCFFI.lime_audio_load_file(path, audioBuffer);
 		#else
 		var data:Dynamic = NativeCFFI.lime_audio_load_file(path, null);
@@ -263,7 +198,6 @@ class AudioBuffer
 			audioBuffer.channels = data.channels;
 			audioBuffer.data = new UInt8Array(@:privateAccess new Bytes(data.data.length, data.data.b));
 			audioBuffer.sampleRate = data.sampleRate;
-			//audioBuffer.initBuffer();
 			return audioBuffer;
 		}
 
@@ -274,13 +208,7 @@ class AudioBuffer
 		#end
 	}
 
-	/**
-		Creates an `AudioBuffer` from an array of file paths.
-
-		@param paths An array of file paths to search for audio data.
-		@return An `AudioBuffer` instance with the audio data loaded from the first valid file found.
-	**/
-	public static function fromFiles(paths:Array<String> #if (js && html5 && lime_howlerjs), ?howlHtml5 = false #end):AudioBuffer
+	public static function fromFiles(paths:Array<String>):AudioBuffer
 	{
 		#if (js && html5 && lime_howlerjs)
 		var audioBuffer = new AudioBuffer();
@@ -288,7 +216,7 @@ class AudioBuffer
 		#if force_html5_audio
 		audioBuffer.__srcHowl = new Howl({src: paths, html5: true, preload: false});
 		#else
-		audioBuffer.__srcHowl = new Howl({src: paths, html5: howlHtml5, preload: false});
+		audioBuffer.__srcHowl = new Howl({src: paths, preload: false});
 		#end
 
 		return audioBuffer;
@@ -305,42 +233,18 @@ class AudioBuffer
 		#end
 	}
 
-	/**
-		Creates an `AudioBuffer` from a `VorbisFile`.
-
-		@param vorbisFile The `VorbisFile` object containing the audio data.
-		@return An `AudioBuffer` instance with the decoded audio data.
-	**/
 	#if lime_vorbis
-		
 	public static function fromVorbisFile(vorbisFile:VorbisFile):AudioBuffer
 	{
 		if (vorbisFile == null) return null;
 
 		var info = vorbisFile.info();
-		if (info == null) return null;
 
 		var audioBuffer = new AudioBuffer();
 		audioBuffer.channels = info.channels;
 		audioBuffer.sampleRate = info.rate;
 		audioBuffer.bitsPerSample = 16;
-
-		if (!vorbisFile.seekable() ||
-			vorbisFile.pcmTotal() < #if lime_cffi @:privateAccess lime._internal.backend.native.NativeAudioSource.STREAM_BUFFER_SAMPLES #else 0x4000 #end)
-		{
-			// convert it to static if its too short or unseekable.
-			vorbisFile.rawSeek(0);
-
-			var isBigEndian = lime.system.System.endianness == lime.system.Endian.BIG_ENDIAN;
-			var bytes:Bytes = Bytes.alloc(Std.int(haxe.Int64.toInt(vorbisFile.pcmTotal()) * info.channels * 2));
-			var total = 0, result = 0;
-			do {
-				total += (result = vorbisFile.read(bytes, total, 0x1000, isBigEndian, 2, true));
-			} while (result > 0);
-
-			audioBuffer.data = new UInt8Array(bytes);
-		}
-		else audioBuffer.__srcVorbisFile = vorbisFile;
+		audioBuffer.__srcVorbisFile = vorbisFile;
 
 		return audioBuffer;
 	}
@@ -351,12 +255,6 @@ class AudioBuffer
 	}
 	#end
 
-	/**
-		Asynchronously loads an `AudioBuffer` from a file.
-
-		@param path The file path to the audio data.
-		@return A `Future` that resolves to the loaded `AudioBuffer`.
-	**/
 	public static function loadFromFile(path:String):Future<AudioBuffer>
 	{
 		#if (flash || (js && html5))
@@ -366,19 +264,7 @@ class AudioBuffer
 
 		if (audioBuffer != null)
 		{
-			#if flash
-			audioBuffer.__srcSound.addEventListener(flash.events.Event.COMPLETE, function(event)
-			{
-				promise.complete(audioBuffer);
-			});
-
-			audioBuffer.__srcSound.addEventListener(flash.events.ProgressEvent.PROGRESS, function(event)
-			{
-				promise.progress(Std.int(event.bytesLoaded), Std.int(event.bytesTotal));
-			});
-
-			audioBuffer.__srcSound.addEventListener(flash.events.IOErrorEvent.IO_ERROR, promise.error);
-			#elseif (js && html5 && lime_howlerjs)
+			#if (js && html5 && lime_howlerjs)
 			if (audioBuffer != null)
 			{
 				audioBuffer.__srcHowl.on("load", function()
@@ -421,17 +307,11 @@ class AudioBuffer
 		#end
 	}
 
-	/**
-		Asynchronously loads an `AudioBuffer` from multiple files.
-
-		@param paths An array of file paths to search for audio data.
-		@return A `Future` that resolves to the loaded `AudioBuffer`.
-	**/
 	public static function loadFromFiles(paths:Array<String>):Future<AudioBuffer>
 	{
-		#if (js && html5 && lime_howlerjs)
 		var promise = new Promise<AudioBuffer>();
 
+		#if (js && html5 && lime_howlerjs)
 		var audioBuffer = AudioBuffer.fromFiles(paths);
 
 		if (audioBuffer != null)
@@ -452,11 +332,11 @@ class AudioBuffer
 		{
 			promise.error(null);
 		}
+		#else
+		promise.completeWith(new Future<AudioBuffer>(function() return fromFiles(paths), true));
+		#end
 
 		return promise.future;
-		#else
-		return new Future(fromFiles.bind(paths), true);
-		#end
 	}
 
 	private static function __getCodec(bytes:Bytes):String
@@ -481,43 +361,6 @@ class AudioBuffer
 
 		Log.error("Unsupported sound format");
 		return null;
-	}
-
-	public static function __getCodecFromBytes(bytes:Bytes):AudioCodec
-	{
-		if (bytes == null) return unknown;
-		var codec = __getCodec(bytes);
-		return switch (codec)
-		{
-			case "audio/ogg": vorbis;
-			case "audio/flac": flac;
-			case "audio/wav": wave;
-			case "audio/mp3": mpeg;
-			default: unknown;
-		}
-	}
-
-	public static function fromDecoder(decoder:AudioDecoder, stream:Bool = false, preload:Bool = true):AudioBuffer
-	{
-		if (decoder == null) return null;
-		var audioBuffer = new AudioBuffer();
-		audioBuffer.decoder = decoder;
-		audioBuffer.bitsPerSample = decoder.bitsPerSample;
-		audioBuffer.channels = decoder.channels;
-		audioBuffer.sampleRate = decoder.sampleRate;
-		if (!stream)
-		{
-			var total:Int64 = decoder.total();
-			if (total > 0)
-			{
-				var totalInt:Int = haxe.Int64.toInt(total);
-				var length:Int = totalInt * audioBuffer.channels * (audioBuffer.bitsPerSample >> 3);
-				var data = haxe.io.Bytes.alloc(length);
-				decoder.decode(data, 0, totalInt, audioBuffer.bitsPerSample >> 3);
-				audioBuffer.data = new UInt8Array(data);
-			}
-		}
-		return audioBuffer;
 	}
 
 	// Get & Set Methods
@@ -554,13 +397,4 @@ class AudioBuffer
 		return __srcCustom = value;
 		#end
 	}
-}
-
-enum abstract AudioCodec(Int) from Int to Int {
-	var unknown = 0;
-	var vorbis = 1;
-	var flac = 2;
-	var wave = 3;
-	var mpeg = 4;
-	var opus = 5;
 }

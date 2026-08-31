@@ -10,7 +10,7 @@ class HTML5AudioSource
 	private var completed:Bool;
 	private var gain:Float;
 	private var id:Int;
-	private var length:Null<Float>;
+	private var length:Int;
 	private var loops:Int;
 	private var parent:AudioSource;
 	private var playing:Bool;
@@ -25,9 +25,7 @@ class HTML5AudioSource
 		position = new Vector4();
 	}
 
-	public function dispose():Void {
-		stop();
-	}
+	public function dispose():Void {}
 
 	public function init():Void {}
 
@@ -101,9 +99,8 @@ class HTML5AudioSource
 		{
 			loops--;
 			stop();
-			if (loopTime != null && loopTime > 0) setCurrentTime(loopTime);
+			// currentTime = 0;
 			play();
-			parent.onLoop.dispatch();
 			return;
 		}
 		else if (parent.buffer != null && parent.buffer.__srcHowl != null)
@@ -190,7 +187,7 @@ class HTML5AudioSource
 		return gain = value;
 	}
 
-	public function getLength():Null<Float>
+	public function getLength():Int
 	{
 		if (length != 0)
 		{
@@ -200,14 +197,14 @@ class HTML5AudioSource
 		#if lime_howlerjs
 		if (parent.buffer != null && parent.buffer.__srcHowl != null)
 		{
-			return parent.buffer.__srcHowl.duration() * 1000.0;
+			return Std.int(parent.buffer.__srcHowl.duration() * 1000);
 		}
 		#end
 
 		return 0;
 	}
 
-	public function setLength(value:Null<Float>):Null<Float>
+	public function setLength(value:Int):Int
 	{
 		return length = value;
 	}
@@ -220,14 +217,6 @@ class HTML5AudioSource
 	public function setLoops(value:Int):Int
 	{
 		return loops = value;
-	}
-
-	public function getLoopTime():Float {
-		return loopTime;
-	}
-
-	public function setLoopTime(value:Float):Float {
-		return loopTime = value;
 	}
 
 	public function getPitch():Float
@@ -251,6 +240,16 @@ class HTML5AudioSource
 
 	public function getPosition():Vector4
 	{
+		#if lime_howlerjs
+		// This should work, but it returns null (But checking the inside of the howl, the _pos is actually null... so ¯\_(ツ)_/¯)
+		/*
+			var arr = parent.buffer.__srcHowl.pos())
+			position.x = arr[0];
+			position.y = arr[1];
+			position.z = arr[2];
+		 */
+		#end
+
 		return position;
 	}
 
@@ -267,17 +266,5 @@ class HTML5AudioSource
 		#end
 
 		return position;
-	}
-
-	public function getPan():Float
-	{
-		return position.x;
-	}
-
-	public function setPan(value:Float):Float
-	{
-		position.setTo(value, 0, -Math.sqrt(1 - value * value));
-		if (parent.buffer != null && parent.buffer.__srcHowl != null && parent.buffer.__srcHowl.stereo != null) parent.buffer.__srcHowl.stereo(value, id);
-		return value;
 	}
 }
