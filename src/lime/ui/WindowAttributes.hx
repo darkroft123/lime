@@ -6,7 +6,6 @@ typedef WindowAttributes =
 {
 	@:optional public var allowHighDPI:Bool;
 	@:optional public var alwaysOnTop:Bool;
-	@:optional public var transparent:Bool;
 	@:optional public var borderless:Bool;
 	@:optional public var context:RenderContextAttributes;
 	// @:optional public var display:Int;

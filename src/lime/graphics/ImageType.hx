@@ -17,6 +17,11 @@ enum ImageType
 	DATA;
 
 	/**
+		The source image data is stored in a `flash.display.BitmapData`
+	**/
+	FLASH;
+
+	/**
 		The source image data is stored in a custom format
 	**/
 	CUSTOM;

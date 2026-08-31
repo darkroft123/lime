@@ -37,12 +37,7 @@ class ModuleHelper
 		System.mkdir(tempDirectory);
 		System.mkdir(outputDirectory);
 
-		var importName:String;
-		var hxmlPath:String;
-		var importPath:String;
-		var outputPath:String;
-		var moduleImport:String;
-		var hxml:String;
+		var importName, hxmlPath, importPath, outputPath, moduleImport, hxml;
 
 		for (module in project.modules)
 		{
@@ -386,11 +381,11 @@ class Generator
 	function genPackage(p:Array<String>)
 	{
 		if (p.length == 0) print("var ");
-		var full:String = null;
+		var full = null;
 		for (x in p)
 		{
 			var prev = full;
-			if (full == null) full = x;
+			if (full == null) full = x
 			else
 				full += "." + x;
 			if (packages.exists(full)) continue;
@@ -475,7 +470,7 @@ class Generator
 
 	function getProperties(fields:Array<ClassField>):String
 	{
-		var properties:Array<String> = [];
+		var properties = [];
 		for (f in fields)
 		{
 			switch (f.kind)

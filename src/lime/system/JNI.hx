@@ -13,6 +13,8 @@ import lime._internal.backend.native.NativeCFFI;
 import sys.thread.Thread;
 #elseif cpp
 import cpp.vm.Thread;
+#elseif neko
+import neko.vm.Thread;
 #end
 #end
 
@@ -382,10 +384,10 @@ class JNIMethod
 	```
 **/
 // Haxe 3 can't parse "target.threaded" inside parentheses.
-#if !(doc_gen || macro)
+#if !doc_gen
 #if target.threaded
 @:autoBuild(lime.system.JNI.JNISafetyTools.build())
-#elseif cpp
+#elseif (cpp || neko)
 @:autoBuild(lime.system.JNI.JNISafetyTools.build())
 #end
 #end
@@ -396,7 +398,7 @@ class JNISafetyTools
 {
 	#if target.threaded
 	private static var mainThread:Thread = Thread.current();
-	#elseif cpp
+	#elseif (cpp || neko)
 	private static var mainThread:Thread = Thread.current();
 	#end
 
@@ -407,7 +409,7 @@ class JNISafetyTools
 	{
 		#if target.threaded
 		return Thread.current() == mainThread;
-		#elseif cpp
+		#elseif (cpp || neko)
 		return Thread.current() == mainThread;
 		#else
 		return true;
@@ -464,13 +466,9 @@ class JNISafetyTools
 
 					// Check the thread before running the function.
 					f.expr = macro
-						if (!lime.system.JNI.JNISafetyTools.onMainThread()) {
-							#if haxe5
-							haxe.EventLoop.main.run($i{field.name}.bind($a{args}));
-							#else
-							haxe.MainLoop.runInMainThread($i{field.name}.bind($a{args}));
-							#end
-						} else
+						if (!lime.system.JNI.JNISafetyTools.onMainThread())
+							haxe.MainLoop.runInMainThread($i{field.name}.bind($a{args}))
+						else
 							${f.expr};
 				default:
 			}

@@ -190,7 +190,7 @@ class IconHelper
 
 			if (image != null)
 			{
-				var data:Bytes = null;
+				var data = null;
 
 				if (size < 256)
 				{
@@ -351,9 +351,9 @@ class IconHelper
 		}
 
 		var extension = Path.extension(icon.path);
+		var image = null;
 
 		#if (lime && lime_cffi && !macro)
-		var image:Image = null;
 		switch (extension)
 		{
 			case "png", "jpg", "jpeg":
@@ -363,10 +363,9 @@ class IconHelper
 				// image = ImageHelper.rasterizeSVG (null /*new SVG (File.getContent (icon.path))*/, width, height, backgroundColor);
 				image = ImageHelper.rasterizeSVG(icon.path, width, height, backgroundColor);
 		}
-		return image;
-		#else
-		return null;
 		#end
+
+		return image;
 	}
 
 	private static function packBits(data:Bytes, offset:Int, len:Int):Bytes

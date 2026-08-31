@@ -1,10 +1,5 @@
 package lime.media;
 
-#if (js && html5 && lime_howlerjs)
-import lime.media.howlerjs.Howler;
-#end
-import lime.utils.Log;
-
 @:access(lime.media.FlashAudioContext)
 @:access(lime.media.HTML5AudioContext)
 @:access(lime.media.OpenALAudioContext)
@@ -12,6 +7,12 @@ import lime.utils.Log;
 class AudioContext
 {
 	public var custom:Dynamic;
+	#if (!lime_doc_gen || flash)
+	public var flash(default, null):FlashAudioContext;
+	#end
+	#if (!lime_doc_gen || (js && html5))
+	public var html5(default, null):HTML5AudioContext;
+	#end
 	#if (!lime_doc_gen || lime_openal)
 	public var openal(default, null):OpenALAudioContext;
 	#end
@@ -25,39 +26,22 @@ class AudioContext
 		if (type != CUSTOM)
 		{
 			#if (js && html5)
-			#if lime_howlerjs
-			if (Howler.usingWebAudio)
+			if (type == null || type == WEB)
 			{
-				web = Howler.ctx;
-				this.type = WEB;
-			}
-			else
-			{
-				#if (!lime_doc_gen && !display)
-				Howler._setupAudioContext();
-				#end
-				if (Howler.usingWebAudio)
+				try
 				{
-					web = Howler.ctx;
+					untyped #if haxe4 js.Syntax.code #else __js__ #end ("window.AudioContext = window.AudioContext || window.webkitAudioContext;");
+					web = cast untyped #if haxe4 js.Syntax.code #else __js__ #end ("new window.AudioContext ()");
 					this.type = WEB;
 				}
-				else
-				{
-					Log.info("Unable to create howlerjs context for Web!");
-				}
+				catch (e:Dynamic) {}
 			}
-			#else
-			try
+
+			if (web == null && type != WEB)
 			{
-				untyped js.Syntax.code("window.AudioContext = window.AudioContext || window.webkitAudioContext;");
-				web = cast untyped js.Syntax.code("new window.AudioContext ()");
-				this.type = WEB;
+				html5 = new HTML5AudioContext();
+				this.type = HTML5;
 			}
-			catch (e:Dynamic)
-			{
-				Log.info("Unable to create AudioContext for Web!");
-			}
-			#end
 			#elseif flash
 			flash = new FlashAudioContext();
 			this.type = FLASH;

@@ -7,6 +7,7 @@ abstract ApplicationData({
 	@:optional var main:String;
 	@:optional var path:String;
 	@:optional var preloader:String;
+	@:optional var swfVersion:Float;
 	@:optional var url:String;
 }) from Dynamic
 {
@@ -17,6 +18,7 @@ abstract ApplicationData({
 		main: "",
 		path: "",
 		preloader: "",
+		swfVersion: 0.0,
 		url: ""
 	};
 }

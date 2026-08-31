@@ -12,7 +12,6 @@ abstract WindowData({
 	@:optional var hardware:Bool;
 	@:optional var display:Int;
 	@:optional var resizable:Bool;
-	@:optional var transparent:Bool;
 	@:optional var borderless:Bool;
 	@:optional var vsync:Bool;
 	@:optional var fullscreen:Bool;
@@ -46,7 +45,6 @@ abstract WindowData({
 		hardware: false,
 		display: 0,
 		resizable: false,
-		transparent: false,
 		borderless: false,
 		vsync: false,
 		fullscreen: false,

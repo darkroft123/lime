@@ -17,6 +17,11 @@ import js.html.Image;
 import js.html.SpanElement;
 import js.Browser;
 import lime.net.HTTPRequest;
+#elseif flash
+import flash.display.LoaderInfo;
+import flash.display.Sprite;
+import flash.events.ProgressEvent;
+import flash.Lib;
 #end
 
 @:access(lime.utils.AssetLibrary)
@@ -271,7 +276,8 @@ class Preloader
 		}
 		#end
 
-		if (!simulateProgress && loadedLibraries == (libraries.length + libraryNames.length))
+		if (!simulateProgress
+			&& loadedLibraries == (libraries.length + libraryNames.length))
 		{
 			if (!preloadComplete)
 			{

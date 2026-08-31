@@ -189,10 +189,13 @@ class ImageCanvasUtil
 
 			if (!image.transparent)
 			{
-				buffer.__srcCanvas.setAttribute("moz-opaque", "true");
+				if (!image.transparent) buffer.__srcCanvas.setAttribute("moz-opaque", "true");
+				buffer.__srcContext = untyped #if haxe4 js.Syntax.code #else __js__ #end ('buffer.__srcCanvas.getContext ("2d", { alpha: false })');
 			}
-
-			buffer.__srcContext = buffer.__srcCanvas.getContext("2d", {alpha: image.transparent});
+			else
+			{
+				buffer.__srcContext = buffer.__srcCanvas.getContext("2d");
+			}
 		}
 		#end
 	}
@@ -223,10 +226,7 @@ class ImageCanvasUtil
 	{
 		convertToCanvas(image);
 
-		var r:Int;
-		var g:Int;
-		var b:Int;
-		var a:Int;
+		var r, g, b, a;
 
 		if (format == ARGB32)
 		{

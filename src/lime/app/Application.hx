@@ -1,9 +1,7 @@
 package lime.app;
 
-import haxe.Int64;
 import lime.graphics.RenderContext;
 import lime.system.System;
-import lime.system.Orientation;
 import lime.ui.Gamepad;
 import lime.ui.GamepadAxis;
 import lime.ui.GamepadButton;
@@ -24,22 +22,17 @@ import lime.utils.Preloader;
 	to override "on" functions in the class in order to handle standard events
 	that are relevant.
 **/
+@:access(lime.ui.Window)
 #if !lime_debug
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(lime.ui.Window)
 class Application extends Module
 {
 	/**
 		The current Application instance that is executing
 	**/
 	public static var current(default, null):Application;
-
-	/**
-		The device's orientation.
-	**/
-	public var deviceOrientation(get, never):Orientation;
 
 	/**
 		Meta-data values for the application, such as a version or a package name
@@ -62,33 +55,20 @@ class Application extends Module
 	public var onCreateWindow = new Event<Window->Void>();
 
 	/**
-		Dispatched when the orientation of the display has changed.
-	**/
-	public var onDisplayOrientationChange = new Event<Int->Orientation->Void>();
-
-	/**
-		Dispatched when the orientation of the device has changed. Typically,
-		the display and device orientation values are the same. However, if the
-		display orientation is locked to portrait or landscape, the display and
-		device orientations may be different.
-	**/
-	public var onDeviceOrientationChange = new Event<Orientation->Void>();
-
-	/**
 		The Preloader for the current Application
 	**/
-	public var preloader(get, never):Preloader;
+	public var preloader(get, null):Preloader;
 
 	/**
 		The Window associated with this Application, or the first Window
 		if there are multiple Windows active
 	**/
-	public var window(get, never):Window;
+	public var window(get, null):Window;
 
 	/**
 		A list of active Window instances associated with this Application
 	**/
-	public var windows(get, never):Array<Window>;
+	public var windows(get, null):Array<Window>;
 
 	@:noCompletion private var __backend:ApplicationBackend;
 	@:noCompletion private var __preloader:Preloader;
@@ -112,9 +92,8 @@ class Application extends Module
 
 	/**
 		Creates a new Application instance
-		@param	appMeta	The metadata for the application.
 	**/
-	public function new(?appMeta:Map<String, String>)
+	public function new()
 	{
 		super();
 
@@ -123,12 +102,11 @@ class Application extends Module
 			Application.current = this;
 		}
 
-		meta = appMeta != null ? appMeta : new Map();
-
+		meta = new Map();
 		modules = new Array();
-
 		__windowByID = new Map();
 		__windows = new Array();
+
 		__backend = new ApplicationBackend(this);
 
 		__registerLimeModule(this);
@@ -195,31 +173,6 @@ class Application extends Module
 	public function onGamepadButtonUp(gamepad:Gamepad, button:GamepadButton):Void {}
 
 	/**
-		Called when a gamepad axis move event is fired
-		@param	gamepad	The current gamepad
-		@param	axis	The axis that was moved
-		@param	value	The axis value (between 0 and 1)
-		@param	timestamp 	The timestamp of the event
-	**/
-	public function onGamepadAxisMovePrecise(gamepad:Gamepad, axis:GamepadAxis, value:Float, timestamp:Int64):Void {}
-
-	/**
-		Called when a gamepad button down event is fired
-		@param	gamepad	The current gamepad
-		@param	button	The button that was pressed
-		@param	timestamp 	The timestamp of the event
-	**/
-	public function onGamepadButtonDownPrecise(gamepad:Gamepad, button:GamepadButton, timestamp:Int64):Void {}
-
-	/**
-		Called when a gamepad button up event is fired
-		@param	gamepad	The current gamepad
-		@param	button	The button that was released
-		@param	timestamp 	The timestamp of the event
-	**/
-	public function onGamepadButtonUpPrecise(gamepad:Gamepad, button:GamepadButton, timestamp:Int64):Void {}
-
-	/**
 		Called when a gamepad is connected
 		@param	gamepad	The gamepad that was connected
 	**/
@@ -274,6 +227,15 @@ class Application extends Module
 	public function onJoystickHatMove(joystick:Joystick, hat:Int, position:JoystickHatPosition):Void {}
 
 	/**
+		Called when a joystick axis move event is fired
+		@param	joystick	The current joystick
+		@param	trackball	The trackball that was moved
+		@param	x	The x movement of the trackball (between 0 and 1)
+		@param	y	The y movement of the trackball (between 0 and 1)
+	**/
+	public function onJoystickTrackballMove(joystick:Joystick, trackball:Int, x:Float, y:Float):Void {}
+
+	/**
 		Called when a key down event is fired on the primary window
 		@param	keyCode	The code of the key that was pressed
 		@param	modifier	The modifier of the key that was pressed
@@ -286,22 +248,6 @@ class Application extends Module
 		@param	modifier	The modifier of the key that was released
 	**/
 	public function onKeyUp(keyCode:KeyCode, modifier:KeyModifier):Void {}
-
-	/**
-		Called when a key down event is fired on the primary window
-		@param	keyCode	The code of the key that was pressed
-		@param	modifier	The modifier of the key that was pressed
-		@param	timestamp 	The timestamp of the event
-	**/
-	public function onKeyDownPrecise(keyCode:KeyCode, modifier:KeyModifier, timestamp:Int64):Void {}
-
-	/**
-		Called when a key up event is fired on the primary window
-		@param	keyCode	The code of the key that was released
-		@param	modifier	The modifier of the key that was released
-		@param	timestamp 	The timestamp of the event
-	**/
-	public function onKeyUpPrecise(keyCode:KeyCode, modifier:KeyModifier, timestamp:Int64):Void {}
 
 	/**
 		Called when the module is exiting
@@ -428,42 +374,9 @@ class Application extends Module
 	public function onWindowDeactivate():Void {}
 
 	/**
-		Called when a window drop file event is fired on the primary window.
-		@param data   The full path of the dropped file.
-		@param source The source application or identifier of the drop.
-		@param x      The X position of the drop in window coordinates.
-		@param y      The Y position of the drop in window coordinates.
+		Called when a window drop file event is fired on the primary window
 	**/
-	public function onWindowDropFile(data:String, source:String, x:Float, y:Float):Void {}
-
-	/**
-		Called when a window drop text event is fired on the primary window.
-		@param data   The dropped text content.
-		@param source The source application or identifier of the drop.
-		@param x      The X position of the drop in window coordinates.
-		@param y      The Y position of the drop in window coordinates.
-	**/
-	public function onWindowDropText(data:String, source:String, x:Float, y:Float):Void {}
-
-	/**
-		Called when a drag-and-drop operation enters the primary window.
-		Triggered before any file or text drop events.
-	**/
-	public function onWindowDropBegin():Void {}
-
-	/**
-		Called when a drag-and-drop operation completes on the primary window.
-		@param x The final X position of the drop in window coordinates.
-		@param y The final Y position of the drop in window coordinates.
-	**/
-	public function onWindowDropComplete(x:Float, y:Float):Void {}
-
-	/**
-		Called when the cursor position changes during a drag-and-drop operation over the primary window.
-		@param x The current X position in window coordinates.
-		@param y The current Y position in window coordinates.
-	**/
-	public function onWindowDropPosition(x:Float, y:Float):Void {}
+	public function onWindowDropFile(file:String):Void {}
 
 	/**
 		Called when a window enter event is fired on the primary window
@@ -562,10 +475,6 @@ class Application extends Module
 				window.onRenderContextRestored.add(onRenderContextRestored);
 				window.onDeactivate.add(onWindowDeactivate);
 				window.onDropFile.add(onWindowDropFile);
-				window.onDropText.add(onWindowDropText);
-				window.onDropBegin.add(onWindowDropBegin);
-				window.onDropComplete.add(onWindowDropComplete);
-				window.onDropPosition.add(onWindowDropPosition);
 				window.onEnter.add(onWindowEnter);
 				window.onExpose.add(onWindowExpose);
 				window.onFocusIn.add(onWindowFocusIn);
@@ -573,8 +482,6 @@ class Application extends Module
 				window.onFullscreen.add(onWindowFullscreen);
 				window.onKeyDown.add(onKeyDown);
 				window.onKeyUp.add(onKeyUp);
-				window.onKeyDownPrecise.add(onKeyDownPrecise);
-				window.onKeyUpPrecise.add(onKeyUpPrecise);
 				window.onLeave.add(onWindowLeave);
 				window.onMinimize.add(onWindowMinimize);
 				window.onMouseDown.add(onMouseDown);
@@ -648,12 +555,15 @@ class Application extends Module
 
 	@:noCompletion private function __checkForAllWindowsClosed():Void
 	{
+		// air handles this automatically with NativeApplication.autoExit
+		#if !air
 		if (__windows.length == 0)
 		{
 			#if !lime_doc_gen
 			System.exit(0);
 			#end
 		}
+		#end
 	}
 
 	@:noCompletion private function __onGamepadConnect(gamepad:Gamepad):Void
@@ -663,9 +573,6 @@ class Application extends Module
 		gamepad.onAxisMove.add(onGamepadAxisMove.bind(gamepad));
 		gamepad.onButtonDown.add(onGamepadButtonDown.bind(gamepad));
 		gamepad.onButtonUp.add(onGamepadButtonUp.bind(gamepad));
-		gamepad.onAxisMovePrecise.add(onGamepadAxisMovePrecise.bind(gamepad));
-		gamepad.onButtonDownPrecise.add(onGamepadButtonDownPrecise.bind(gamepad));
-		gamepad.onButtonUpPrecise.add(onGamepadButtonUpPrecise.bind(gamepad));
 		gamepad.onDisconnect.add(onGamepadDisconnect.bind(gamepad));
 	}
 
@@ -678,6 +585,7 @@ class Application extends Module
 		joystick.onButtonUp.add(onJoystickButtonUp.bind(joystick));
 		joystick.onDisconnect.add(onJoystickDisconnect.bind(joystick));
 		joystick.onHatMove.add(onJoystickHatMove.bind(joystick));
+		joystick.onTrackballMove.add(onJoystickTrackballMove.bind(joystick));
 	}
 
 	@:noCompletion private function __onModuleExit(code:Int):Void
@@ -734,14 +642,13 @@ class Application extends Module
 	{
 		return __windows;
 	}
-
-	@:noCompletion private function get_deviceOrientation():Orientation
-	{
-		return __backend.getDeviceOrientation();
-	}
 }
 
-#if (js && html5)
+#if air
+@:noCompletion private typedef ApplicationBackend = lime._internal.backend.air.AIRApplication;
+#elseif flash
+@:noCompletion private typedef ApplicationBackend = lime._internal.backend.flash.FlashApplication;
+#elseif (js && html5)
 @:noCompletion private typedef ApplicationBackend = lime._internal.backend.html5.HTML5Application;
 #else
 @:noCompletion private typedef ApplicationBackend = lime._internal.backend.native.NativeApplication;

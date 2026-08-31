@@ -283,7 +283,7 @@ class TVOSHelper
 			var oldDevices:Map<String, String> = ["appletv" => "apple-tv-1080p"];
 
 			var deviceFlag:String = null;
-			var deviceTypeID:String = null;
+			var deviceTypeID = null;
 
 			// check if old device flag and convert to current
 			for (key in oldDevices.keys())

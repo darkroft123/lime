@@ -3,7 +3,9 @@ package lime.tools;
 import hxp.*;
 import sys.io.File;
 import sys.FileSystem;
-#if cpp
+#if neko
+import neko.Lib;
+#elseif cpp
 import cpp.Lib;
 #end
 
@@ -78,49 +80,18 @@ class ProjectHelper
 	public static function recursiveSmartCopyTemplate(project:HXProject, source:String, destination:String, context:Dynamic = null, process:Bool = true,
 			warnIfNotFound:Bool = true)
 	{
-		var destinations:Array<String> = [];
+		var destinations = [];
 		var paths = System.findTemplateRecursive(project.templatePaths, source, warnIfNotFound, destinations);
 
 		if (paths != null)
 		{
 			System.mkdir(destination);
-			var itemDestination:String;
+			var itemDestination;
 
 			for (i in 0...paths.length)
 			{
 				itemDestination = Path.combine(destination, ProjectHelper.substitutePath(project, destinations[i]));
 				System.copyFile(paths[i], itemDestination, context, process);
-			}
-		}
-	}
-
-	public static function recursiveSmartCopyDirectory(project:HXProject, source:String, destination:String, context:Dynamic = null, process:Bool = true,
-			warnIfNotFound:Bool = true, itemPath:String = '')
-	{
-		if (!FileSystem.exists(source))
-		{
-			if (warnIfNotFound)
-			{
-				Log.warn("Could not find directory: " + source);
-			}
-
-			return;
-		}
-
-		for (item in FileSystem.readDirectory(source))
-		{
-			var nextItemPath = Path.combine(itemPath, item);
-			var itemSource = Path.combine(source, item);
-			var itemDestination = Path.combine(destination, item);
-
-			if (FileSystem.isDirectory(itemSource))
-			{
-				recursiveSmartCopyDirectory(project, itemSource, itemDestination, context, process, warnIfNotFound, nextItemPath);
-			}
-			else
-			{
-				FileSystem.createDirectory(Path.directory(itemDestination));
-				System.copyFile(itemSource, itemDestination, context, process);
 			}
 		}
 	}
@@ -149,8 +120,7 @@ class ProjectHelper
 		else
 		{
 			var substring = StringTools.replace(string, " ", "");
-			var index:Int;
-			var value:String;
+			var index, value;
 
 			if (substring.indexOf("==") > -1)
 			{

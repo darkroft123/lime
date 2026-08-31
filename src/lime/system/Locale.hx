@@ -54,6 +54,7 @@ abstract Locale(String) from String to String
 		{
 			var locale = null;
 
+
 			#if (js && html5)
 			locale = untyped navigator.language;
 			#elseif (android)
@@ -63,7 +64,8 @@ abstract Locale(String) from String to String
 			locale = toString(getDefault());
 			#elseif (lime_cffi && !macro)
 			#if hl
-			locale = CFFI.stringValue(lime_locale_get_system_locale());
+			var _locale = lime_locale_get_system_locale();
+			locale = _locale != null ? @:privateAccess String.fromUTF8(_locale) : null;
 			#else
 			locale = CFFI.load("lime", "lime_locale_get_system_locale", 0)();
 			#end

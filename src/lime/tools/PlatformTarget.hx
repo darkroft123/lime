@@ -4,8 +4,6 @@ import haxe.rtti.Meta;
 import hxp.*;
 import lime.tools.AssetHelper;
 import lime.tools.CommandHelper;
-import sys.FileSystem;
-import sys.io.File;
 
 class PlatformTarget
 {
@@ -101,12 +99,10 @@ class PlatformTarget
 		if (command == "update" || command == "build" || command == "test")
 		{
 			logCommand("update");
-
-			_touchedFiles = [];
+			// #if lime
+			// AssetHelper.processLibraries (project, targetDirectory);
+			// #end
 			update();
-
-			deleteStaleFiles(_touchedFiles);
-			_touchedFiles = null;
 		}
 
 		if (command == "build" || command == "test")
@@ -151,176 +147,25 @@ class PlatformTarget
 		}
 	}
 
-	// Command implementations
+	@ignore public function build():Void {}
 
-	public function build():Void {}
+	@ignore public function clean():Void {}
 
-	public function clean():Void
-	{
-		if (FileSystem.exists(targetDirectory))
-		{
-			System.removeDirectory(targetDirectory);
-		}
-	}
+	@ignore public function deploy():Void {}
 
-	public function deploy():Void {}
+	@ignore public function display():Void {}
 
-	public function display():Void {}
+	@ignore public function install():Void {}
 
-	public function install():Void {}
+	@ignore public function rebuild():Void {}
 
-	public function rebuild():Void {}
+	@ignore public function run():Void {}
 
-	public function run():Void {}
+	@ignore public function trace():Void {}
 
-	public function trace():Void {}
+	@ignore public function uninstall():Void {}
 
-	public function uninstall():Void {}
+	@ignore public function update():Void {}
 
-	public function update():Void {}
-
-	public function watch():Void
-	{
-		var hxml = getDisplayHXML();
-		if (hxml == null)
-		{
-			return;
-		}
-
-		var dirs = hxml.getClassPaths(true);
-
-		var outputPath = Path.combine(Sys.getCwd(), project.app.path);
-		dirs = dirs.filter(function(dir)
-		{
-			return (!Path.startsWith(dir, outputPath));
-		});
-
-		var command = ProjectHelper.getCurrentCommand();
-		System.watch(command, dirs);
-	}
-
-	// Common functionality used by subclasses
-
-	private function copyProjectAssets(outputDirectory:String, assetDirectory:String = null)
-	{
-		if (assetDirectory == null)
-		{
-			assetDirectory = outputDirectory;
-		}
-		else if (!StringTools.startsWith(assetDirectory, targetDirectory))
-		{
-			assetDirectory = Path.combine(outputDirectory, assetDirectory);
-		}
-
-		var embedDirectory = Path.combine(targetDirectory, "obj/tmp");
-
-		for (asset in project.assets)
-		{
-			if (asset.type == AssetType.TEMPLATE)
-			{
-				var path = Path.combine(outputDirectory, asset.targetPath);
-				System.mkdir(Path.directory(path));
-				AssetHelper.copyAsset(asset, path, project.templateContext);
-			}
-			else if (asset.embed == true)
-			{
-				if (asset.sourcePath == "")
-				{
-					var path = Path.combine(embedDirectory, asset.targetPath);
-					System.mkdir(Path.directory(path));
-					AssetHelper.copyAsset(asset, path);
-					asset.sourcePath = path;
-				}
-			}
-			else
-			{
-				var path = Path.combine(assetDirectory, asset.targetPath);
-				System.mkdir(Path.directory(path));
-				AssetHelper.copyAssetIfNewer(asset, path);
-			}
-		}
-	}
-
-	private function getDisplayHXML():HXML { return null; }
-
-	// Functions to track and delete stale files
-
-	/**
-		Files that were copied into the output directory due to something in
-		project.xml, but which might not be included next time.
-
-		`PlatformTarget` will handle assets and templates, but subclasses are
-		responsible for adding any other files they copy (e.g., dependencies).
-	**/
-	private var _touchedFiles:Array<String> = null;
-
-	/**
-		Calls `System.copyIfNewer()` with the given arguments, then records the
-		file in `_touchedFiles`. See `_touchedFiles` for information about what
-		needs to be recorded.
-	**/
-	private function copyIfNewer(source:String, destination:String):Void
-	{
-		System.copyIfNewer(source, destination);
-
-		if (_touchedFiles != null)
-		{
-			_touchedFiles.push(destination);
-		}
-	}
-
-	private function deleteStaleFiles(touchedFiles:Array<String>):Void
-	{
-		if (project.defines.exists("lime-ignore-stale-files")) return;
-
-		for (asset in project.assets)
-		{
-			touchedFiles.push(targetDirectory + "/bin/" + asset.targetPath);
-		}
-
-		var record:String = targetDirectory + "/.files";
-		if (FileSystem.exists(record))
-		{
-			for (oldFile in File.getContent(record).split("\n"))
-			{
-				if (oldFile.length > 0 && touchedFiles.indexOf(oldFile) < 0)
-				{
-					System.deleteFile(oldFile);
-				}
-			}
-		}
-
-		File.saveContent(record, touchedFiles.join("\n"));
-	}
-
-	/**
-		Calls `System.recursiveCopy()` with the given arguments, then records
-		the files in `_touchedFiles`. See `_touchedFiles` for information about
-		what needs to be recorded.
-	**/
-	private function recursiveCopy(source:String, destination:String, context:Dynamic = null, process:Bool = true):Void
-	{
-		System.recursiveCopy(source, destination, context, process);
-
-		if (_touchedFiles == null || !FileSystem.exists(source)) return;
-
-		function recurse(source:String, destination:String):Void
-		{
-			for (file in FileSystem.readDirectory(source))
-			{
-				if (file.charAt(0) == ".") continue;
-
-				if (FileSystem.isDirectory(source + "/" + file))
-				{
-					recurse(source + "/" + file, destination + "/" + file);
-				}
-				else
-				{
-					_touchedFiles.push(destination + "/" + file);
-				}
-			}
-		}
-
-		recurse(source, destination);
-	}
+	@ignore public function watch():Void {}
 }

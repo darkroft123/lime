@@ -8,11 +8,11 @@ import lime.app.Event;
 #end
 class Sensor
 {
-	private static var __sensorByID = new Map<Int, Sensor>();
-	private static var __sensor = new Array<Sensor>();
+	private static var sensorByID = new Map<Int, Sensor>();
+	private static var sensors = new Array<Sensor>();
 
 	public var id:Int;
-	public var onUpdate = new Event<Float->Float->Float->Void>();
+	public var onUpdate = new Event<(Float->Float->Float->Void)>();
 	public var type:SensorType;
 
 	@:noCompletion private function new(type:SensorType, id:Int)
@@ -25,13 +25,13 @@ class Sensor
 	{
 		if (type == null)
 		{
-			return __sensor.copy();
+			return sensors.copy();
 		}
 		else
 		{
 			var result = [];
 
-			for (sensor in __sensor)
+			for (sensor in sensors)
 			{
 				if (sensor.type == type)
 				{
@@ -45,13 +45,10 @@ class Sensor
 
 	private static function registerSensor(type:SensorType, id:Int):Sensor
 	{
-		if (id < 0)
-			return null;
-
 		var sensor = new Sensor(type, id);
 
-		__sensor.push(sensor);
-		__sensorByID.set(id, sensor);
+		sensors.push(sensor);
+		sensorByID.set(id, sensor);
 
 		return sensor;
 	}

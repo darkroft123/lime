@@ -1,8 +1,11 @@
 package lime.utils;
 
 #if (js && !doc_gen)
+#if haxe4
 import js.lib.Uint8Array as JSUInt8Array;
-
+#else
+import js.html.Uint8Array as JSUInt8Array;
+#end
 @:forward
 @:transitive
 abstract UInt8Array(JSUInt8Array) from JSUInt8Array to JSUInt8Array
@@ -56,10 +59,10 @@ abstract UInt8Array(JSUInt8Array) from JSUInt8Array to JSUInt8Array
 		}
 	}
 
-	@:arrayAccess extern inline function __set(idx:Int, val:UInt):UInt
+	@:arrayAccess #if (haxe_ver >= 4.0) extern #else @:extern #end inline function __set(idx:Int, val:UInt):UInt
 		return this[idx] = val;
 
-	@:arrayAccess extern inline function __get(idx:Int):UInt
+	@:arrayAccess #if (haxe_ver >= 4.0) extern #else @:extern #end inline function __get(idx:Int):UInt
 		return this[idx];
 
 	// non spec haxe conversions
@@ -146,15 +149,15 @@ abstract UInt8Array(ArrayBufferView) from ArrayBufferView to ArrayBufferView
 		return this.length;
 
 	@:noCompletion
-	@:arrayAccess
-	extern public inline function __get(idx:Int)
+	@:arrayAccess #if (haxe_ver >= 4.0) extern #else @:extern #end
+	public inline function __get(idx:Int)
 	{
 		return ArrayBufferIO.getUint8(this.buffer, this.byteOffset + idx);
 	}
 
 	@:noCompletion
-	@:arrayAccess
-	extern public inline function __set(idx:Int, val:UInt)
+	@:arrayAccess #if (haxe_ver >= 4.0) extern #else @:extern #end
+	public inline function __set(idx:Int, val:UInt)
 	{
 		ArrayBufferIO.setUint8(this.buffer, this.byteOffset + idx, val);
 		return val;

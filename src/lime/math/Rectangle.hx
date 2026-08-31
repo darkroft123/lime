@@ -1,5 +1,9 @@
 package lime.math;
 
+#if flash
+import flash.geom.Rectangle as FlashRectangle;
+#end
+
 /**
 	The `Rectangle` class provides a simple object for storing
 	and manipulating a logical rectangle for calculations
@@ -326,6 +330,15 @@ class Rectangle
 		}
 
 		return result;
+	}
+
+	@:noCompletion private function __toFlashRectangle():#if flash FlashRectangle #else Dynamic #end
+	{
+		#if flash
+		return new FlashRectangle(x, y, width, height);
+		#else
+		return null;
+		#end
 	}
 
 	// Getters & Setters

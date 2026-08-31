@@ -39,6 +39,13 @@ class RenderContext
 	#end
 
 	/**
+		Access to the current Flash render context, if available
+	**/
+	#if (!lime_doc_gen || flash)
+	public var flash(default, null):FlashRenderContext;
+	#end
+
+	/**
 		Access to the current OpenGL render API, if available
 	**/
 	#if (!lime_doc_gen || (native && desktop))

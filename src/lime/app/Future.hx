@@ -2,7 +2,6 @@ package lime.app;
 
 import lime.system.System;
 import lime.system.ThreadPool;
-import lime.system.WorkOutput;
 import lime.utils.Log;
 
 /**
@@ -40,7 +39,7 @@ import lime.utils.Log;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:allow(lime.app.Promise) class Future<T>
+@:allow(lime.app.Promise) /*@:generic*/ class Future<T>
 {
 	/**
 		If the `Future` has finished with an error state, the `error` value
@@ -67,24 +66,22 @@ import lime.utils.Log;
 	@:noCompletion private var __progressListeners:Array<Int->Int->Void>;
 
 	/**
-		@param work			Optional: a function to compute this future's value.
-		@param useThreads	Whether to run `work` on a background thread, where supported.
-		If false or if this isn't a system target, it will run immediately on the main thread.
+		Create a new `Future` instance
+		@param	work	(Optional) A function to execute
+		@param	async	(Optional) If a function is specified, whether to execute it asynchronously where supported
 	**/
-	public function new(work:Void->T = null, useThreads:Bool = false)
+	public function new(work:Void->T = null, async:Bool = false)
 	{
 		if (work != null)
 		{
-			#if (lime_threads && !html5)
-			if (useThreads)
+			if (async)
 			{
 				var promise = new Promise<T>();
 				promise.future = this;
 
-				FutureWork.runSimpleJob(work, promise);
+				FutureWork.queue({promise: promise, work: work});
 			}
 			else
-			#end
 			{
 				try
 				{
@@ -107,9 +104,9 @@ import lime.utils.Log;
 	{
 		var promise = new Promise<T>();
 
-		onComplete.add(promise.complete, true);
-		if (onError != null) onError.add(promise.error, true);
-		if (onProgress != null) onProgress.add(promise.progress, true);
+		onComplete.add(function(data) promise.complete(data), true);
+		if (onError != null) onError.add(function(error) promise.error(error), true);
+		if (onProgress != null) onProgress.add(function(progress, total) promise.progress(progress, total), true);
 
 		return promise.future;
 	}
@@ -201,7 +198,17 @@ import lime.utils.Log;
 	**/
 	public function ready(waitTime:Int = -1):Future<T>
 	{
-		#if (lime_threads && !html5)
+		#if js
+		if (isComplete || isError)
+		{
+			return this;
+		}
+		else
+		{
+			Log.warn("Cannot block thread in JavaScript");
+			return this;
+		}
+		#else
 		if (isComplete || isError)
 		{
 			return this;
@@ -211,7 +218,7 @@ import lime.utils.Log;
 			var time = System.getTimer();
 			var end = time + waitTime;
 
-			while (!isComplete && !isError && time <= end && FutureWork.activeJobs > 0)
+			while (!isComplete && !isError && time <= end)
 			{
 				#if sys
 				Sys.sleep(0.01);
@@ -222,8 +229,6 @@ import lime.utils.Log;
 
 			return this;
 		}
-		#else
-		return this;
 		#end
 	}
 
@@ -296,7 +301,7 @@ import lime.utils.Log;
 
 	/**
 		Creates a `Future` instance which has finished with a completion value
-		@param	value	The completion value to set
+		@param	error	The completion value to set
 		@return	A new `Future` instance
 	**/
 	public static function withValue<T>(value:T):Future<T>
@@ -306,242 +311,50 @@ import lime.utils.Log;
 		future.value = value;
 		return future;
 	}
-
-	// Aggregation functions
-
-	/**
-	 * Creates a `Future` which completes once all the input `Future`s complete
-	 * successfully. Its completion value will be an array of the input
-	 * `Future`s' completion values, in the order they happened.
-	 *
-	 * If any of the input `Future`s encounter an error, the output `Future`
-	 * fails with the first encountered error message.
-	 */
-	public static function all<T>(futures:Array<Future<T>>):Future<Array<T>>
-	{
-		var promise:Promise<Array<T>> = new Promise<Array<T>>();
-		var results:Array<T> = [];
-
-		if (futures.length == 0)
-		{
-			promise.complete(results);
-			return promise.future;
-		}
-
-		for (future in futures)
-		{
-			future.onComplete(function(result)
-			{
-				results.push(result);
-				if (results.length == futures.length)
-				{
-					promise.complete(results);
-				}
-			});
-			future.onError(promise.error);
-		}
-
-		return promise.future;
-	}
-
-	/**
-	 * Creates a promise which completes when all the input `Future`s resolve
-	 * (whether success or failure). The completion value will be the array of
-	 * resolved `Future`s, whose states can be examined.
-	 */
-	public static function allResolved<T>(futures:Array<Future<T>>):Future<Array<Future<T>>>
-	{
-		var promise:Promise<Array<Future<T>>> = new Promise<Array<Future<T>>>();
-
-		if (futures.length == 0)
-		{
-			promise.complete(futures);
-			return promise.future;
-		}
-
-		var resolved:Int = 0;
-
-		for (future in futures)
-		{
-			future.onComplete(function(value)
-			{
-				resolved += 1;
-				if (resolved == futures.length)
-				{
-					promise.complete(futures);
-				}
-			});
-			future.onError(function(error)
-			{
-				resolved += 1;
-				if (resolved == futures.length)
-				{
-					promise.complete(futures);
-				}
-			});
-		}
-
-		return promise.future;
-	}
-
-	/**
-	 * Creates a `Future` which completes when any of the input `Future`s
-	 * complete, with that `Future`'s completion value. If all input `Future`s
-	 * encounter an error, the output `Future` will be rejected with an array
-	 * containing the error messages.
-	 */
-	public static function any<T>(futures:Array<Future<T>>):Future<T>
-	{
-		var promise:Promise<T> = new Promise<T>();
-		var errors:Array<Dynamic> = [];
-
-		if (futures.length == 0)
-		{
-			promise.error(errors);
-			return promise.future;
-		}
-
-		for (future in futures)
-		{
-			future.onComplete(promise.complete);
-			future.onError(function(error)
-			{
-				errors.push(error);
-				if (errors.length == futures.length)
-				{
-					promise.error(errors);
-				}
-			});
-		}
-
-		return promise.future;
-	}
-
-	/**
-	 * Creates a `Future` that resolves once any of the input `Future`s resolve,
-	 * with the same result as the first one to do so.
-	 *
-	 * If `futures` is empty, the returned `Future` will wait forever.
-	 */
-	public static function race<T>(futures:Array<Future<T>>):Future<T>
-	{
-		var promise:Promise<T> = new Promise<T>();
-
-		for (future in futures)
-		{
-			future.onComplete(promise.complete);
-			future.onError(promise.error);
-		}
-
-		return promise.future;
-	}
 }
 
-/**
-	The class that handles asynchronous `work` functions passed to `new Future()`.
-**/
 #if !lime_debug
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:dox(hide) class FutureWork
+@:dox(hide) private class FutureWork
 {
 	private static var threadPool:ThreadPool;
-	private static var promises:Map<Int, {complete:Dynamic->Dynamic, error:Dynamic->Dynamic, progress:Int->Int->Dynamic}>;
 
-	public static var minThreads(default, set):Int = 0;
-	public static var maxThreads(default, set):Int = 1;
-	public static var activeJobs(get, never):Int;
-
-	@:allow(lime.app.Promise)
-	private static inline function cancelJob(id:Int):Void
-	{
-		threadPool.cancelJob(id);
-	}
-
-	#if (lime_threads && !html5)
-	@:allow(lime.app.Future)
-	private static function runSimpleJob<T>(work:Void->T, promise:Promise<T>):Void
-	{
-		run(threadPool_doWork, promise, work, MULTI_THREADED);
-	}
-	#end
-
-	@:allow(lime.app.Promise)
-	private static function run<T>(work:WorkFunction<State->WorkOutput->Void>, promise:Promise<T>, state:State, mode:ThreadMode):Int
+	public static function queue(state:Dynamic = null):Void
 	{
 		if (threadPool == null)
 		{
-			threadPool = new ThreadPool(minThreads, maxThreads, MULTI_THREADED);
+			threadPool = new ThreadPool();
+			threadPool.doWork.add(threadPool_doWork);
 			threadPool.onComplete.add(threadPool_onComplete);
 			threadPool.onError.add(threadPool_onError);
-			threadPool.onProgress.add(threadPool_onProgress);
-
-			promises = new Map();
 		}
 
-		var jobID:Int = threadPool.run(work, state, mode);
-		promises[jobID] = {complete: promise.complete, error: promise.error, progress: promise.progress};
-		return jobID;
+		threadPool.queue(state);
 	}
 
 	// Event Handlers
-	private static function threadPool_doWork(work:Void->Dynamic, output:WorkOutput):Void
+	private static function threadPool_doWork(state:Dynamic):Void
 	{
 		try
 		{
-			output.sendComplete(work());
+			var result = state.work();
+			threadPool.sendComplete({promise: state.promise, result: result});
 		}
 		catch (e:Dynamic)
 		{
-			output.sendError(e);
+			threadPool.sendError({promise: state.promise, error: e});
 		}
 	}
 
-	private static function threadPool_onComplete(result:Dynamic):Void
+	private static function threadPool_onComplete(state:Dynamic):Void
 	{
-		var promise = promises[threadPool.activeJob.id];
-		promises.remove(threadPool.activeJob.id);
-		promise.complete(result);
+		state.promise.complete(state.result);
 	}
 
-	private static function threadPool_onError(error:Dynamic):Void
+	private static function threadPool_onError(state:Dynamic):Void
 	{
-		var promise = promises[threadPool.activeJob.id];
-		promises.remove(threadPool.activeJob.id);
-		promise.error(error);
-	}
-
-	private static function threadPool_onProgress(progress:{progress:Int, total:Int}):Void
-	{
-		// ThreadPool doesn't enforce types, so check manually
-		if (Type.typeof(progress) == TObject && Type.typeof(progress.progress) == TInt && Type.typeof(progress.total) == TInt)
-		{
-			promises[threadPool.activeJob.id].progress(progress.progress, progress.total);
-		}
-	}
-
-	// Getters & Setters
-	@:noCompletion private static inline function set_minThreads(value:Int):Int
-	{
-		if (threadPool != null)
-		{
-			threadPool.minThreads = value;
-		}
-		return minThreads = value;
-	}
-
-	@:noCompletion private static inline function set_maxThreads(value:Int):Int
-	{
-		if (threadPool != null)
-		{
-			threadPool.maxThreads = value;
-		}
-		return maxThreads = value;
-	}
-
-	@:noCompletion private static inline function get_activeJobs():Int
-	{
-		return threadPool != null ? threadPool.activeJobs : 0;
+		state.promise.error(state.error);
 	}
 }

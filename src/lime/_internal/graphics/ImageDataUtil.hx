@@ -327,12 +327,8 @@ class ImageDataUtil
 				var sourceFormat = sourceImage.buffer.format;
 				var destFormat = image.buffer.format;
 
-				var sourcePosition:Int;
-				var destPosition:Int;
-				var sourceAlpha:Float;
-				var destAlpha:Float;
-				var oneMinusSourceAlpha:Float;
-				var blendAlpha:Float;
+				var sourcePosition, destPosition;
+				var sourceAlpha, destAlpha, oneMinusSourceAlpha, blendAlpha;
 				var sourcePixel:RGBA = 0;
 				var destPixel:RGBA = 0;
 
@@ -698,8 +694,7 @@ class ImageDataUtil
 			_mask.a = 0xFF;
 		}
 
-		var pixel:Int;
-		var hit:Bool;
+		var pixel, hit;
 
 		for (x in 0...image.width)
 		{
@@ -926,8 +921,7 @@ class ImageDataUtil
 			var sourcePremultiplied = sourceImage.buffer.premultiplied;
 			var destPremultiplied = image.buffer.premultiplied;
 
-			var sourcePosition:Int;
-			var destPosition:Int;
+			var sourcePosition, destPosition;
 			var sourcePixel:RGBA = 0;
 			var destPixel:RGBA = 0;
 
@@ -1119,20 +1113,10 @@ class ImageDataUtil
 		else
 		#end
 		{
-			var index:Int;
+			var index, a16;
 			var length = Std.int(data.length / 4);
-			var r1:Int;
-			var g1:Int;
-			var b1:Int;
-			var a1:Int;
-			var r2:Int;
-			var g2:Int;
-			var b2:Int;
-			var a2:Int;
-			var r:Int;
-			var g:Int;
-			var b:Int;
-			var a:Int;
+			var r1, g1, b1, a1, r2, g2, b2, a2;
+			var r, g, b, a;
 
 			switch (image.format)
 			{
@@ -1467,12 +1451,7 @@ class ImageDataUtil
 	private static #if cpp inline #end function __boxBlurH(imgA:UInt8Array, imgB:UInt8Array, w:Int, h:Int, r:Int, off:Int):Void
 	{
 		var iarr = 1 / (r + r + 1);
-		var ti:Int;
-		var li:Int;
-		var ri:Int;
-		var fv:Int;
-		var lv:Int;
-		var val:Int;
+		var ti, li, ri, fv, lv, val;
 
 		for (i in 0...h)
 		{
@@ -1520,12 +1499,7 @@ class ImageDataUtil
 	{
 		var iarr = 1 / (r + r + 1);
 		var ws = w * 4;
-		var ti:Int;
-		var li:Int;
-		var ri:Int;
-		var fv:Int;
-		var lv:Int;
-		var val:Int;
+		var ti, li, ri, fv, lv, val;
 
 		for (i in 0...w)
 		{
@@ -1775,7 +1749,7 @@ private class ImageDataView
 }
 
 @:noCompletion @:dox(hide)
-private enum abstract ThresholdOperation(Int) from Int to Int
+#if (haxe_ver >= 4.0) private enum #else @:enum private #end abstract ThresholdOperation(Int) from Int to Int
 {
 	var NOT_EQUALS = 0;
 	var EQUALS = 1;

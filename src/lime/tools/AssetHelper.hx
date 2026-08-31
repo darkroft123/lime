@@ -26,8 +26,7 @@ class AssetHelper
 		knownExtensions = [
 
 			"jpg" => IMAGE, "jpeg" => IMAGE, "png" => IMAGE, "gif" => IMAGE, "webp" => IMAGE, "bmp" => IMAGE, "tiff" => IMAGE, "jfif" => IMAGE, "otf" => FONT,
-			"ttf" => FONT, "wav" => SOUND, "wave" => SOUND, "flac" => SOUND, "mid" => SOUND, "midi" => SOUND, "ogg" => SOUND, "spx" => SOUND, "au" => SOUND,
-			"aiff" => SOUND, "oga" => SOUND, "opus" => MUSIC, "mp3" => MUSIC, "mp2" => MUSIC, "exe" => BINARY, "bin" => BINARY, "so" => BINARY, "pch" => BINARY,
+			"ttf" => FONT, "wav" => SOUND, "wave" => SOUND, "mp3" => MUSIC, "mp2" => MUSIC, "exe" => BINARY, "bin" => BINARY, "so" => BINARY, "pch" => BINARY,
 			"dll" => BINARY, "zip" => BINARY, "tar" => BINARY, "gz" => BINARY, "fla" => BINARY, "swf" => BINARY, "atf" => BINARY, "psd" => BINARY,
 			"awd" => BINARY, "txt" => TEXT, "text" => TEXT, "xml" => TEXT, "java" => TEXT, "hx" => TEXT, "cpp" => TEXT, "c" => TEXT, "h" => TEXT,
 			"cs" => TEXT, "js" => TEXT, "mm" => TEXT, "hxml" => TEXT, "html" => TEXT, "json" => TEXT, "css" => TEXT, "gpe" => TEXT, "pbxproj" => TEXT,
@@ -116,7 +115,7 @@ class AssetHelper
 			libraries[lib.name] = lib;
 		}
 
-		var assetData:Dynamic;
+		var assetData;
 
 		for (asset in project.assets)
 		{
@@ -156,8 +155,8 @@ class AssetHelper
 			}
 		}
 
-		var manifest:AssetManifest = null;
-		var manifests:Array<AssetManifest> = [];
+		var manifest = null;
+		var manifests = [];
 
 		if (!hasManifest.exists(DEFAULT_LIBRARY_NAME))
 		{
@@ -179,7 +178,7 @@ class AssetHelper
 		if (targetDirectory != null)
 		{
 			System.mkdir(targetDirectory);
-			var targetPath:String;
+			var targetPath;
 
 			for (manifest in manifests)
 			{
@@ -212,7 +211,23 @@ class AssetHelper
 				type: Std.string(asset.type)
 			};
 
-		if (project.target == HTML5)
+		if (project.target == FLASH || project.target == AIR)
+		{
+			if (asset.embed != false || asset.type == FONT)
+			{
+				assetData.className = "__ASSET__" + asset.flatName;
+			}
+			else
+			{
+				assetData.path = asset.resourceName;
+			}
+
+			if (asset.embed == false && asset.library != null && libraries.exists(asset.library))
+			{
+				assetData.preload = libraries[asset.library].preload;
+			}
+		}
+		else if (project.target == HTML5)
 		{
 			if (asset.type == FONT)
 			{
@@ -375,6 +390,8 @@ class AssetHelper
 
 	private static function isPackedLibrary(project:HXProject, library:Library)
 	{
+		if (project.target == FLASH && library.embed != false) return false;
+
 		return switch (library.type)
 		{
 			case "pak", "pack", "gzip", "zip", "deflate": true;
@@ -392,7 +409,7 @@ class AssetHelper
 			libraryMap[library.name] = true;
 		}
 
-		var library:Library;
+		var library;
 
 		for (asset in project.assets)
 		{
@@ -418,7 +435,7 @@ class AssetHelper
 
 		var handlers = new Array<String>();
 		var hasPackedLibraries = false;
-		var type:String;
+		var type;
 
 		for (library in project.libraries)
 		{
@@ -475,7 +492,7 @@ class AssetHelper
 				}
 				catch (e:Dynamic)
 				{
-					var types:Array<String> = [];
+					var types = [];
 
 					for (library in project.libraries)
 					{
@@ -528,13 +545,14 @@ class AssetHelper
 			project.haxedefs.set("disable_preloader_assets", "1");
 		}
 
-		var manifest:AssetManifest;
-		var embed:Bool;
-		var asset:Asset;
+		var manifest, embed, asset;
 
 		for (library in project.libraries)
 		{
-			if (library.type == null)
+			if (library.type == null
+				|| (project.target == FLASH
+					&& library.embed != false
+					&& ["pak", "pack", "gzip", "zip", "deflate"].indexOf(library.type) > -1))
 			{
 				if (library.name == DEFAULT_LIBRARY_NAME)
 				{
@@ -591,10 +609,7 @@ class AssetHelper
 
 	public static function processPackedLibraries(project:HXProject, targetDirectory:String = null):Void
 	{
-		var type:String;
-		var cacheAvailable:Bool;
-		var cacheDirectory:String;
-		var filename:String;
+		var type, asset, cacheAvailable, cacheDirectory, filename;
 		var output, manifest, position, assetData:Dynamic, input;
 		var embeddedLibrary = false;
 
@@ -612,6 +627,7 @@ class AssetHelper
 			if (isPackedLibrary(project, library))
 			{
 				// TODO
+				#if !nodejs
 				if (type == "zip") type = "deflate";
 
 				// TODO: Support library.embed=true by embedding all the assets instead of packing
@@ -640,7 +656,7 @@ class AssetHelper
 
 					try
 					{
-						var assetData:Dynamic;
+						var assetData;
 
 						for (asset in project.assets)
 						{
@@ -656,6 +672,10 @@ class AssetHelper
 					{
 						output.close();
 						FileSystem.deleteFile(cacheDirectory + filename);
+
+						#if neko
+						neko.Lib.rethrow(e);
+						#end
 					}
 
 					output.close();
@@ -680,6 +700,7 @@ class AssetHelper
 				{
 					library.preload = true;
 				}
+				#end
 			}
 		}
 

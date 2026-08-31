@@ -695,11 +695,6 @@ class GL
 	}
 
 	#if (lime_opengl || lime_opengles)
-	public static inline function blendBarrier():Void
-	{
-		context.blendBarrier();
-	}
-
 	public static inline function bufferData(target:Int, size:Int, srcData:DataPointer, usage:Int):Void
 	{
 		context.bufferData(target, size, srcData, usage);
@@ -2640,7 +2635,7 @@ class GL
 	}
 }
 
-@:dox(hide) @:noCompletion enum abstract GLObjectType(Int) to Int
+@:dox(hide) @:noCompletion #if (haxe_ver >= 4.0) enum #else @:enum #end abstract GLObjectType(Int) to Int
 {
 	var UNKNOWN = 0;
 	var PROGRAM = 1;

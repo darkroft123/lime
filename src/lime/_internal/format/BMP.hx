@@ -109,10 +109,7 @@ class BMP
 
 		var pixels = image.getPixels(new Rectangle(0, 0, image.width, image.height), ARGB32);
 		var readPosition = 0;
-		var a:Int;
-		var r:Int;
-		var g:Int;
-		var b:Int;
+		var a, r, g, b;
 
 		switch (type)
 		{
