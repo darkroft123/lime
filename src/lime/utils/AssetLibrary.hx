@@ -14,6 +14,7 @@ import lime.utils.AssetType;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
+@:access(lime.media.AudioBuffer)
 @:access(lime.text.Font)
 @:access(lime.utils.Assets)
 class AssetLibrary
@@ -57,6 +58,7 @@ class AssetLibrary
 			{
 				return true;
 			}
+
 			if (requestedType == BINARY || requestedType == null || (assetType == BINARY && requestedType == TEXT))
 			{
 				return true;
@@ -166,15 +168,58 @@ class AssetLibrary
 	{
 		if (cachedAudioBuffers.exists(id))
 		{
-			return cachedAudioBuffers.get(id);
+			var cachedBuffer = cachedAudioBuffers.get(id);
+
+			if (__isValidAudioBuffer(cachedBuffer))
+			{
+				return cachedBuffer;
+			}
+
+			cachedAudioBuffers.remove(id);
 		}
-		else if (classTypes.exists(id))
+		if (classTypes.exists(id))
 		{
 			return AudioBuffer.fromBytes(cast(Type.createInstance(classTypes.get(id), []), Bytes));
 		}
 		else
 		{
 			return AudioBuffer.fromFile(getPath(id));
+		}
+	}
+
+	public function getAudioBufferStream(id:String):AudioBuffer
+	{
+		if (cachedAudioBuffers.exists(id))
+		{
+			var cachedBuffer = cachedAudioBuffers.get(id);
+
+			if (__isValidAudioBuffer(cachedBuffer))
+			{
+				return cachedBuffer;
+			}
+
+			cachedAudioBuffers.remove(id);
+		}
+		if (classTypes.exists(id))
+		{
+			#if flash
+			var buffer = new AudioBuffer();
+			buffer.src = cast(Type.createInstance(classTypes.get(id), []), Sound);
+			return buffer;
+			#else
+			return AudioBuffer.fromBytesStream(cast(Type.createInstance(classTypes.get(id), []), Bytes));
+			#end
+		}
+		else
+		{
+			if (pathGroups.exists(id))
+			{
+				return AudioBuffer.fromFilesStream(pathGroups.get(id));
+			}
+			else
+			{
+				return AudioBuffer.fromFileStream(getPath(id));
+			}
 		}
 	}
 
@@ -408,9 +453,16 @@ class AssetLibrary
 	{
 		if (cachedAudioBuffers.exists(id))
 		{
-			return Future.withValue(cachedAudioBuffers.get(id));
+			var cachedBuffer = cachedAudioBuffers.get(id);
+
+			if (__isValidAudioBuffer(cachedBuffer))
+			{
+				return Future.withValue(cachedBuffer);
+			}
+
+			cachedAudioBuffers.remove(id);
 		}
-		else if (classTypes.exists(id))
+		if (classTypes.exists(id))
 		{
 			return Future.withValue(AudioBuffer.fromBytes(cast(Type.createInstance(classTypes.get(id), []), Bytes)));
 		}
@@ -425,6 +477,46 @@ class AssetLibrary
 				return AudioBuffer.loadFromFile(paths.get(id));
 			}
 		}
+	}
+
+	// Lime 8.4.0-dev BS
+	public function loadAudioBufferStream(id:String):Future<AudioBuffer>
+	{
+		if (cachedAudioBuffers.exists(id))
+		{
+			var cachedBuffer = cachedAudioBuffers.get(id);
+
+			if (__isValidAudioBuffer(cachedBuffer))
+			{
+				return Future.withValue(cachedBuffer);
+			}
+
+			cachedAudioBuffers.remove(id);
+		}
+		if (classTypes.exists(id))
+		{
+			#if flash
+			return Future.withValue(getAudioBufferStream(id));
+			#else
+			return Future.withValue(AudioBuffer.fromBytesStream(cast(Type.createInstance(classTypes.get(id), []), Bytes)));
+			#end
+		}
+		else
+		{
+			if (pathGroups.exists(id))
+			{
+				return AudioBuffer.loadFromFilesStream(pathGroups.get(id));
+			}
+			else
+			{
+				return AudioBuffer.loadFromFileStream(paths.get(id));
+			}
+		}
+	}
+
+	@:noCompletion private static function __isValidAudioBuffer(buffer:AudioBuffer):Bool
+	{
+		return (buffer != null && !buffer.__isDisposed);
 	}
 
 	public function loadBytes(id:String):Future<Bytes>
@@ -554,19 +646,11 @@ class AssetLibrary
 
 	public function unload():Void
 	{
-		#if haxe4
 		cachedBytes.clear();
 		cachedFonts.clear();
 		cachedImages.clear();
 		cachedAudioBuffers.clear();
 		cachedText.clear();
-		#else
-		cachedBytes = new Map<String, Bytes>();
-		cachedFonts = new Map<String, Font>();
-		cachedImages = new Map<String, Image>();
-		cachedText = new Map<String, String>();
-		classTypes = new Map<String, Class<Dynamic>>();
-		#end
 	}
 
 	@:noCompletion private function __assetLoaded(id:String):Void

@@ -3,6 +3,7 @@ package lime.system;
 import lime._internal.backend.native.NativeCFFI;
 import lime.app.Application;
 import lime.app.Event;
+import lime.system.CFFI;
 #if (js && html5)
 import lime._internal.backend.html5.HTML5Window;
 #end
@@ -37,20 +38,9 @@ class Clipboard
 		_text = null;
 
 		#if (lime_cffi && !macro)
-		#if hl
-		var utf = NativeCFFI.lime_clipboard_get_text();
-		if (utf != null)
-		{
-			_text = @:privateAccess String.fromUTF8(utf);
-		}
-		#else
-		_text = NativeCFFI.lime_clipboard_get_text();
-		#end
-		#elseif flash
-		if (FlashClipboard.generalClipboard.hasFormat(TEXT_FORMAT))
-		{
-			_text = FlashClipboard.generalClipboard.getData(TEXT_FORMAT);
-		}
+		_text = CFFI.stringValue(NativeCFFI.lime_clipboard_get_text());
+		#elseif (js || html5)
+		_text = cacheText;
 		#end
 		__updated = true;
 
@@ -63,9 +53,10 @@ class Clipboard
 	// Get & Set Methods
 	private static function get_text():String
 	{
-		// Native clipboard (except Xorg) calls __update when clipboard changes.
-
-		#if (flash || js || html5)
+		// On some native platforms, __update() is called automatically when the
+		// native clipboard changes. On others, __update() needs to be called
+		// manually.
+		#if (js || html5 || ios || tvos || android)
 		__update();
 		#elseif linux
 		// Xorg won't call __update until we call set_text at least once.
@@ -99,8 +90,6 @@ class Clipboard
 
 		#if (lime_cffi && !macro)
 		NativeCFFI.lime_clipboard_set_text(value);
-		#elseif flash
-		FlashClipboard.generalClipboard.setData(TEXT_FORMAT, value);
 		#elseif (js && html5)
 		var window = Application.current.window;
 		if (window != null)

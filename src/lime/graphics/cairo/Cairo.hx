@@ -15,8 +15,8 @@ import lime.text.Glyph;
 @:access(lime._internal.backend.native.NativeCFFI)
 class Cairo
 {
-	public static var version(get, null):Int;
-	public static var versionString(get, null):String;
+	public static var version(get, never):Int;
+	public static var versionString(get, never):String;
 
 	public var antialias(get, set):CairoAntialias;
 	public var currentPoint(get, never):Vector2;
@@ -36,7 +36,7 @@ class Cairo
 	public var operator(get, set):CairoOperator;
 	#end
 	public var source(get, set):CairoPattern;
-	public var target(get, null):CairoSurface;
+	public var target(get, never):CairoSurface;
 	public var tolerance(get, set):Float;
 	public var userData:Dynamic;
 
@@ -425,7 +425,7 @@ class Cairo
 	public function transform(matrix:Matrix3):Void
 	{
 		#if (lime_cffi && lime_cairo && !macro)
-		NativeCFFI.lime_cairo_transform(handle, matrix);
+		NativeCFFI.lime_cairo_transform(handle, matrix.toCairoMatrix3());
 		#end
 	}
 
@@ -643,7 +643,7 @@ class Cairo
 	{
 		#if (lime_cffi && lime_cairo && !macro)
 		#if hl
-		return NativeCFFI.lime_cairo_get_matrix(handle, new Matrix3());
+		return NativeCFFI.lime_cairo_get_matrix(handle, new CairoMatrix3());
 		#else
 		var m:Dynamic = NativeCFFI.lime_cairo_get_matrix(handle);
 		return new Matrix3(m.a, m.b, m.c, m.d, m.tx, m.ty);
@@ -657,7 +657,7 @@ class Cairo
 	{
 		#if (lime_cffi && lime_cairo && !macro)
 		#if hl
-		NativeCFFI.lime_cairo_set_matrix(handle, value);
+		NativeCFFI.lime_cairo_set_matrix(handle, value.toCairoMatrix3());
 		#else
 		NativeCFFI.lime_cairo_set_matrix(handle, value.a, value.b, value.c, value.d, value.tx, value.ty);
 		// NativeCFFI.lime_cairo_set_matrix (handle, value);
@@ -762,11 +762,7 @@ class Cairo
 	private static function get_versionString():String
 	{
 		#if (lime_cffi && lime_cairo && !macro)
-		#if hl
-		return @:privateAccess String.fromUTF8(NativeCFFI.lime_cairo_version_string());
-		#else
-		return NativeCFFI.lime_cairo_version_string();
-		#end
+		return CFFI.stringValue(NativeCFFI.lime_cairo_version_string());
 		#else
 		return "";
 		#end

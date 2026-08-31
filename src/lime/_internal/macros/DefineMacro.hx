@@ -12,15 +12,12 @@ class DefineMacro
 		{
 			if (Context.defined("js"))
 			{
-				if (!Context.defined("nodejs"))
-				{
-					Compiler.define("html5");
-					Compiler.define("web");
-					Compiler.define("lime-canvas");
-					Compiler.define("lime-dom");
-					Compiler.define("lime-howlerjs");
-					Compiler.define("lime-webgl");
-				}
+				Compiler.define("html5");
+				Compiler.define("web");
+				Compiler.define("lime-canvas");
+				Compiler.define("lime-dom");
+				Compiler.define("lime-howlerjs");
+				Compiler.define("lime-webgl");
 			}
 			else
 			{
@@ -28,7 +25,7 @@ class DefineMacro
 
 				var cffi = (!Context.defined("nocffi") && !Context.defined("eval"));
 
-				if (Context.defined("ios") || Context.defined("android") || Context.defined("tizen"))
+				if (Context.defined("ios") || Context.defined("android"))
 				{
 					Compiler.define("mobile");
 					if (cffi) Compiler.define("lime-opengles");

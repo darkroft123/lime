@@ -7,9 +7,7 @@ import lime.tools.HXProject;
 import lime.tools.Platform;
 import sys.FileSystem;
 import sys.io.File;
-#if neko
-import neko.vm.Thread;
-#elseif cpp
+#if cpp
 import cpp.vm.Thread;
 #end
 
@@ -36,14 +34,6 @@ class HTML5Helper
 		}
 	}
 
-	// public static function generateFontData (project:HXProject, font:Asset):String {
-	// 	var sourcePath = font.sourcePath;
-	// 	if (!FileSystem.exists (FileSystem.fullPath (sourcePath) + ".hash")) {
-	// 		var templatePaths = [ Path.combine (Haxelib.getPath (new Haxelib (#if lime "lime" #else "hxp" #end)), "templates") ].concat (project.templatePaths);
-	// 		System.runCommand (Path.directory (sourcePath), "neko", [ System.findTemplate (templatePaths, "bin/hxswfml.n"), "ttf2hash2", Path.withoutDirectory (sourcePath), FileSystem.fullPath (sourcePath) + ".hash", "-glyphs", font.glyphs ]);
-	// 	}
-	// 	return "-resource " + FileSystem.fullPath (sourcePath) + ".hash@__ASSET__" + font.flatName;
-	// }
 	public static function generateWebfonts(project:HXProject, font:Asset):Void
 	{
 		var suffix = switch (System.hostPlatform)
@@ -93,36 +83,10 @@ class HTML5Helper
 		}
 		else
 		{
-			var suffix = switch (System.hostPlatform)
-			{
-				case WINDOWS: "-windows.exe";
-				case MAC: "-mac";
-				case LINUX: "-linux";
-				default: return;
-			}
-
-			if (suffix == "-linux")
-			{
-				if (System.hostArchitecture == X86)
-				{
-					suffix += "32";
-				}
-				else
-				{
-					suffix += "64";
-				}
-			}
-
 			var templatePaths = [
 				Path.combine(Haxelib.getPath(new Haxelib(#if lime "lime" #else "hxp" #end)), #if lime "templates" #else "" #end)
 			].concat(project.templatePaths);
-			var node = System.findTemplate(templatePaths, "bin/node/node" + suffix);
 			var server = System.findTemplate(templatePaths, "bin/node/http-server/bin/http-server");
-
-			if (System.hostPlatform != WINDOWS)
-			{
-				Sys.command("chmod", ["+x", node]);
-			}
 
 			var args = [server, path, "-c-1", "--cors"];
 
@@ -152,7 +116,7 @@ class HTML5Helper
 				args.push("--silent");
 			}
 
-			System.runCommand("", node, args);
+			System.runCommand("", "node", args);
 		}
 	}
 
@@ -166,37 +130,12 @@ class HTML5Helper
 			{
 				var executable = "npx";
 				var terser = "terser";
-				if (!project.targetFlags.exists("npx")) {
-					var suffix = switch (System.hostPlatform)
-					{
-						case WINDOWS: "-windows.exe";
-						case MAC: "-mac";
-						case LINUX: "-linux";
-						default: return false;
-					}
-
-					if (suffix == "-linux")
-					{
-						if (System.hostArchitecture == X86)
-						{
-							suffix += "32";
-						}
-						else
-						{
-							suffix += "64";
-						}
-					}
-
+				if (!project.targetFlags.exists("npx"))
+				{
 					var templatePaths = [
 						Path.combine(Haxelib.getPath(new Haxelib(#if lime "lime" #else "hxp" #end)), #if lime "templates" #else "" #end)
 					].concat(project.templatePaths);
-					executable = System.findTemplate(templatePaths, "bin/node/node" + suffix);
 					terser = System.findTemplate(templatePaths, "bin/node/terser/bin/terser");
-
-					if (System.hostPlatform != WINDOWS)
-					{
-						Sys.command("chmod", ["+x", executable]);
-					}
 				}
 
 				var args = [
@@ -214,21 +153,11 @@ class HTML5Helper
 					args.push('content=\'${sourceFile}.map\'');
 				}
 
-				System.runCommand("", executable, args);
+				System.runCommand("", "node", args);
 			}
 			else if (project.targetFlags.exists("yui"))
 			{
-				var templatePaths = [
-					Path.combine(Haxelib.getPath(new Haxelib(#if lime "lime" #else "hxp" #end)), #if lime "templates" #else "" #end)
-				].concat(project.templatePaths);
-				System.runCommand("", "java", [
-					"-Dapple.awt.UIElement=true",
-					"-jar",
-					System.findTemplate(templatePaths, "bin/yuicompressor-2.4.7.jar"),
-					"-o",
-					tempFile,
-					sourceFile
-				]);
+				Log.error("YUI Compressor is no longer supported by Lime for JavaScript minification.");
 			}
 			else
 			{
@@ -288,11 +217,9 @@ class HTML5Helper
 				if (FileSystem.exists(tempFile + ".map"))
 				{
 					// closure does not include a sourceMappingURL in the created .js, we do it here
-					#if !nodejs
 					var f = File.append(tempFile);
 					f.writeString("//# sourceMappingURL=" + StringTools.urlEncode(Path.withoutDirectory(sourceFile)) + ".map");
 					f.close();
-					#end
 
 					File.copy(tempFile + ".map", sourceFile + ".map");
 					FileSystem.deleteFile(tempFile + ".map");

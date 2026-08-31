@@ -15,6 +15,7 @@ import lime.graphics.OpenGLRenderContext;
 import lime.graphics.RenderContext;
 import lime.math.Rectangle;
 import lime.math.Vector2;
+import lime.system.CFFI;
 import lime.system.Display;
 import lime.system.DisplayMode;
 import lime.system.JNI;
@@ -80,6 +81,7 @@ class NativeWindow
 
 		if (Reflect.hasField(attributes, "allowHighDPI") && attributes.allowHighDPI) flags |= cast WindowFlags.WINDOW_FLAG_ALLOW_HIGHDPI;
 		if (Reflect.hasField(attributes, "alwaysOnTop") && attributes.alwaysOnTop) flags |= cast WindowFlags.WINDOW_FLAG_ALWAYS_ON_TOP;
+		if (Reflect.hasField(attributes, "transparent") && attributes.transparent) flags |= cast WindowFlags.WINDOW_FLAG_TRANSPARENT;
 		if (Reflect.hasField(attributes, "borderless") && attributes.borderless) flags |= cast WindowFlags.WINDOW_FLAG_BORDERLESS;
 		if (Reflect.hasField(attributes, "fullscreen") && attributes.fullscreen) flags |= cast WindowFlags.WINDOW_FLAG_FULLSCREEN;
 		if (Reflect.hasField(attributes, "hidden") && attributes.hidden) flags |= cast WindowFlags.WINDOW_FLAG_HIDDEN;
@@ -123,11 +125,7 @@ class NativeWindow
 		var context = new RenderContext();
 		context.window = parent;
 
-		#if hl
-		var contextType = @:privateAccess String.fromUTF8(NativeCFFI.lime_window_get_context_type(handle));
-		#else
-		var contextType:String = NativeCFFI.lime_window_get_context_type(handle);
-		#end
+		var contextType:String = CFFI.stringValue(NativeCFFI.lime_window_get_context_type(handle));
 
 		switch (contextType)
 		{
@@ -135,6 +133,7 @@ class NativeWindow
 				var gl = new NativeOpenGLRenderContext();
 
 				useHardware = true;
+				contextAttributes.hardware = true;
 
 				#if lime_opengl
 				context.gl = gl;
@@ -158,6 +157,7 @@ class NativeWindow
 
 			default:
 				useHardware = false;
+				contextAttributes.hardware = false;
 
 				#if lime_cairo
 				context.cairo = cairo;
@@ -176,16 +176,35 @@ class NativeWindow
 
 		setFrameRate(Reflect.hasField(attributes, "frameRate") ? attributes.frameRate : 60);
 		#end
+
+		// SDL 2 enables text input events by default, but we want them only
+		// when requested. otherwise, we might get weird behavior like IME
+		// candidate windows appearing unexpectedly when holding down a key.
+		// See, for example: openfl/openfl#2697
+		// it appears that SDL 3 may behave differently, if we ever upgrade.
+		setTextInputEnabled(false);
 	}
 
-	public function alert(message:String, title:String):Void
+	public function alert(type:lime.ui.MessageBoxType, message:String, title:String, buttons:Array<String>):Int
 	{
 		if (handle != null)
 		{
 			#if (!macro && lime_cffi)
-			NativeCFFI.lime_window_alert(handle, message, title);
+			if (buttons == null || buttons.length <= 0)
+			{
+				buttons = ["Ok"];
+			}
+			#if hl
+			var _buttons = new hl.NativeArray<String>(buttons.length);
+			for (i in 0...buttons.length)
+				_buttons[i] = buttons[i];
+			var buttons = _buttons;
+			#end
+			return NativeCFFI.lime_window_alert(handle, type, message, title, buttons);
 			#end
 		}
+
+		return -1;
 	}
 
 	public function close():Void
@@ -240,6 +259,18 @@ class NativeWindow
 		}
 	}
 
+	public function setVSyncMode(mode:lime.ui.WindowVSyncMode):Bool
+	{
+		if (handle != null)
+		{
+			#if (!macro && lime_cffi)
+			return NativeCFFI.lime_window_set_vsync_mode(handle, mode);
+			#end
+		}
+
+		return false;
+	}
+
 	public function getCursor():MouseCursor
 	{
 		return cursor;
@@ -252,10 +283,22 @@ class NativeWindow
 			#if (!macro && lime_cffi)
 			var index = NativeCFFI.lime_window_get_display(handle);
 
-			if (index > -1)
+			if (index >= 1)
 			{
 				return System.getDisplay(index);
 			}
+			#end
+		}
+
+		return null;
+	}
+
+	public function getNativeHandle():Dynamic
+	{
+		if (handle != null)
+		{
+			#if (!macro && lime_cffi)
+			return NativeCFFI.lime_window_get_handle(handle);
 			#end
 		}
 
@@ -344,7 +387,10 @@ class NativeWindow
 				var windowWidth = Std.int(parent.__width * parent.__scale);
 				var windowHeight = Std.int(parent.__height * parent.__scale);
 
-				var x, y, width, height;
+				var x:Int;
+				var y:Int;
+				var width:Int;
+				var height:Int;
 
 				if (rect != null)
 				{
@@ -390,16 +436,7 @@ class NativeWindow
 
 			default:
 				#if (!macro && lime_cffi)
-				#if !cs
 				imageBuffer = NativeCFFI.lime_window_read_pixels(handle, rect, new ImageBuffer(new UInt8Array(Bytes.alloc(0))));
-				#else
-				var data:Dynamic = NativeCFFI.lime_window_read_pixels(handle, rect, null);
-				if (data != null)
-				{
-					imageBuffer = new ImageBuffer(new UInt8Array(@:privateAccess new Bytes(data.data.length, data.data.b)), data.width, data.height,
-						data.bitsPerPixel);
-				}
-				#end
 				#end
 
 				if (imageBuffer != null)
@@ -711,12 +748,12 @@ class NativeWindow
 		return value;
 	}
 
-	public function setVSync(value:Bool):Bool
+	public function setAlwaysOnTop(value:Bool):Bool
 	{
 		if (handle != null)
 		{
 			#if (!macro && lime_cffi)
-			return NativeCFFI.lime_window_set_vsync(handle, value);
+			NativeCFFI.lime_window_set_always_on_top(handle, value);
 			#end
 		}
 
@@ -731,7 +768,7 @@ class NativeWindow
 	}
 }
 
-#if (haxe_ver >= 4.0) private enum #else @:enum private #end abstract MouseCursorType(Int) from Int to Int
+private enum abstract MouseCursorType(Int) from Int to Int
 {
 	var HIDDEN = 0;
 	var ARROW = 1;
@@ -748,23 +785,24 @@ class NativeWindow
 	var WAIT_ARROW = 12;
 }
 
-#if (haxe_ver >= 4.0) private enum #else @:enum private #end abstract WindowFlags(Int)
+private enum abstract WindowFlags(Int)
 {
 	var WINDOW_FLAG_FULLSCREEN = 0x00000001;
-	var WINDOW_FLAG_BORDERLESS = 0x00000002;
-	var WINDOW_FLAG_RESIZABLE = 0x00000004;
-	var WINDOW_FLAG_HARDWARE = 0x00000008;
-	var WINDOW_FLAG_VSYNC = 0x00000010;
-	var WINDOW_FLAG_HW_AA = 0x00000020;
-	var WINDOW_FLAG_HW_AA_HIRES = 0x00000060;
-	var WINDOW_FLAG_ALLOW_SHADERS = 0x00000080;
-	var WINDOW_FLAG_REQUIRE_SHADERS = 0x00000100;
-	var WINDOW_FLAG_DEPTH_BUFFER = 0x00000200;
-	var WINDOW_FLAG_STENCIL_BUFFER = 0x00000400;
-	var WINDOW_FLAG_ALLOW_HIGHDPI = 0x00000800;
-	var WINDOW_FLAG_HIDDEN = 0x00001000;
-	var WINDOW_FLAG_MINIMIZED = 0x00002000;
-	var WINDOW_FLAG_MAXIMIZED = 0x00004000;
-	var WINDOW_FLAG_ALWAYS_ON_TOP = 0x00008000;
-	var WINDOW_FLAG_COLOR_DEPTH_32_BIT = 0x00010000;
+	var WINDOW_FLAG_TRANSPARENT = 0x00000002;
+	var WINDOW_FLAG_BORDERLESS = 0x00000004;
+	var WINDOW_FLAG_RESIZABLE = 0x00000008;
+	var WINDOW_FLAG_HARDWARE = 0x00000010;
+	var WINDOW_FLAG_VSYNC = 0x00000020;
+	var WINDOW_FLAG_HW_AA = 0x00000040;
+	var WINDOW_FLAG_HW_AA_HIRES = 0x000000C0;
+	var WINDOW_FLAG_ALLOW_SHADERS = 0x00000100;
+	var WINDOW_FLAG_REQUIRE_SHADERS = 0x00000200;
+	var WINDOW_FLAG_DEPTH_BUFFER = 0x00000400;
+	var WINDOW_FLAG_STENCIL_BUFFER = 0x00000800;
+	var WINDOW_FLAG_ALLOW_HIGHDPI = 0x00001000;
+	var WINDOW_FLAG_HIDDEN = 0x00002000;
+	var WINDOW_FLAG_MINIMIZED = 0x00004000;
+	var WINDOW_FLAG_MAXIMIZED = 0x00008000;
+	var WINDOW_FLAG_ALWAYS_ON_TOP = 0x00010000;
+	var WINDOW_FLAG_COLOR_DEPTH_32_BIT = 0x00020000;
 }

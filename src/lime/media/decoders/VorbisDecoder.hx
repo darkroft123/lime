@@ -1,4 +1,4 @@
-﻿package lime.media.decoders;
+package lime.media.decoders;
 
 #if (!lime_doc_gen || lime_vorbis)
 import haxe.Int64;

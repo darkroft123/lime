@@ -1,4 +1,4 @@
-﻿package lime.media;
+package lime.media;
 
 import haxe.Int64;
 import haxe.io.Bytes;
@@ -174,15 +174,15 @@ class AudioDecoder
 		return switch (AudioBuffer.__getCodecFromBytes(bytes))
 		{
 			#if lime_opus
-			case opus: OpusDecoder.fromBytes(bytes);
+			case OPUS: OpusDecoder.fromBytes(bytes);
 			#end
 			#if lime_vorbis
-			case vorbis: VorbisDecoder.fromBytes(bytes);
+			case VORBIS: VorbisDecoder.fromBytes(bytes);
 			#end
 			#if lime_drlibs
-			case wave: WaveDecoder.fromBytes(bytes);
-			case mpeg: MP3Decoder.fromBytes(bytes);
-			case flac: FLACDecoder.fromBytes(bytes);
+			case WAVE: WaveDecoder.fromBytes(bytes);
+			case MPEG: MP3Decoder.fromBytes(bytes);
+			case FLAC: FLACDecoder.fromBytes(bytes);
 			#end
 			default: null;
 		}
