@@ -1,4 +1,4 @@
-﻿package lime._internal.backend.native;
+package lime._internal.backend.native;
 
 import haxe.Timer;
 import lime._internal.backend.native.NativeCFFI;
@@ -78,12 +78,18 @@ class NativeApplication
 
 		AudioManager.init();
 
-		#if (ios || android || tvos)
-		Sensor.registerSensor(SensorType.ACCELEROMETER, 0);
-		#end
-
 		#if (!macro && lime_cffi)
 		handle = NativeCFFI.lime_application_create();
+		
+		#if (ios || android)
+		final accelerometerID:Int = NativeCFFI.lime_system_get_first_accelerometer_sensor_id();
+		if (accelerometerID > 0)
+			Sensor.registerSensor(SensorType.ACCELEROMETER, accelerometerID);
+
+		final gyroscopeID:Int = NativeCFFI.lime_system_get_first_gyroscope_sensor_id();
+		if (gyroscopeID > 0)
+			Sensor.registerSensor(SensorType.GYROSCOPE, gyroscopeID);
+		#end
 		#end
 	}
 
@@ -93,8 +99,9 @@ class NativeApplication
 		if (pauseTimer > -1)
 		{
 			var offset = System.getTimer() - pauseTimer;
-			for(timer in Timer.sRunningTimers) {
-				if(timer != null && timer.mRunning) timer.mFireAt += offset;
+			for (i in 0...Timer.sRunningTimers.length)
+			{
+				if (Timer.sRunningTimers[i] != null) Timer.sRunningTimers[i].mFireAt += offset;
 			}
 			pauseTimer = -1;
 		}
@@ -116,7 +123,7 @@ class NativeApplication
 		NativeCFFI.lime_text_event_manager_register(handleTextEvent, textEventInfo);
 		NativeCFFI.lime_touch_event_manager_register(handleTouchEvent, touchEventInfo);
 		NativeCFFI.lime_window_event_manager_register(handleWindowEvent, windowEventInfo);
-		#if (ios || android || tvos)
+		#if (ios || android)
 		NativeCFFI.lime_sensor_event_manager_register(handleSensorEvent, sensorEventInfo);
 		#end
 		#end
@@ -226,7 +233,9 @@ class NativeApplication
 				var joystick = Joystick.devices.get(joystickEventInfo.id);
 				if (joystick != null) joystick.onHatMove.dispatch(joystickEventInfo.index, joystickEventInfo.eventValue);
 
-			case TRACKBALL_MOVE: // I guess this was just removed ??
+			case TRACKBALL_MOVE:
+				var joystick = Joystick.devices.get(joystickEventInfo.id);
+				if (joystick != null) joystick.onTrackballMove.dispatch(joystickEventInfo.index, joystickEventInfo.x, joystickEventInfo.y);
 
 			case BUTTON_DOWN:
 				var joystick = Joystick.devices.get(joystickEventInfo.id);
@@ -259,9 +268,10 @@ class NativeApplication
 			{
 				case KEY_DOWN:
 					window.onKeyDown.dispatch(keyCode, modifier);
-
+					window.onKeyDownPrecise.dispatch(keyCode,modifier,System.getTimerPrecise());
 				case KEY_UP:
 					window.onKeyUp.dispatch(keyCode, modifier);
+					window.onKeyUpPrecise.dispatch(keyCode,modifier,System.getTimerPrecise());
 			}
 
 			#if (windows || linux)
@@ -511,14 +521,14 @@ class NativeApplication
 				case WINDOW_ACTIVATE:
 					advanceTimer();
 					window.onActivate.dispatch();
-					// AudioManager.resume();
+					AudioManager.resume();
 
 				case WINDOW_CLOSE:
 					window.close();
 
 				case WINDOW_DEACTIVATE:
 					window.onDeactivate.dispatch();
-					// AudioManager.suspend();
+					AudioManager.suspend();
 					pauseTimer = System.getTimer();
 
 				case WINDOW_ENTER:
@@ -585,9 +595,9 @@ class NativeApplication
 			{
 				timer = Timer.sRunningTimers[i];
 
-				if (timer != null && timer.mRunning)
+				if (timer != null)
 				{
-					if (currentTime >= timer.mFireAt)
+					if (timer.mRunning && currentTime >= timer.mFireAt)
 					{
 						timer.mFireAt += timer.mTime;
 						timer.run();
@@ -603,7 +613,7 @@ class NativeApplication
 			{
 				Timer.sRunningTimers = Timer.sRunningTimers.filter(function(val)
 				{
-					return val != null && val.mRunning;
+					return val != null;
 				});
 			}
 		}
@@ -625,10 +635,10 @@ class NativeApplication
 
 @:keep /*private*/ class ApplicationEventInfo
 {
-	public var deltaTime:Int;
+	public var deltaTime:Float;
 	public var type:ApplicationEventType;
 
-	public function new(type:ApplicationEventType = null, deltaTime:Int = 0)
+	public function new(type:ApplicationEventType = null, deltaTime:Float = 0)
 	{
 		this.type = type;
 		this.deltaTime = deltaTime;

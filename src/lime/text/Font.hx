@@ -1,4 +1,4 @@
-﻿package lime.text;
+package lime.text;
 
 import haxe.io.Bytes;
 import lime._internal.backend.native.NativeCFFI;
@@ -281,7 +281,7 @@ class Font
 		var glyphList = _glyphList;
 		#end
 
-		NativeCFFI.lime_font_set_size(src, fontSize, 0);
+		NativeCFFI.lime_font_set_size(src, fontSize);
 
 		var bytes = Bytes.alloc(0);
 		bytes = NativeCFFI.lime_font_render_glyphs(src, glyphList, bytes);
@@ -592,7 +592,7 @@ class Font
 	@:noCompletion private function __setSize(size:Int):Void
 	{
 		#if (lime_cffi && !macro)
-		NativeCFFI.lime_font_set_size(src, size, 0);
+		NativeCFFI.lime_font_set_size(src, size);
 		#end
 	}
 }

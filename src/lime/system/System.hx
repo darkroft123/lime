@@ -1,4 +1,4 @@
-﻿package lime.system;
+package lime.system;
 
 import haxe.Constraints;
 import lime._internal.backend.native.NativeCFFI;
@@ -9,14 +9,6 @@ import lime.ui.WindowAttributes;
 import lime.utils.ArrayBuffer;
 import lime.utils.UInt8Array;
 import lime.utils.UInt16Array;
-#if flash
-import openfl.net.URLRequest;
-import openfl.system.Capabilities;
-import openfl.Lib;
-#end
-#if air
-import openfl.desktop.NativeApplication;
-#end
 #if ((js && html5) || electron)
 import js.html.Element;
 import js.Browser;
@@ -41,7 +33,6 @@ import sys.io.Process;
 extern "C" {
 	_declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
 	_declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-	_declspec(dllexport) int IntelGfxRequestHighPerformance = 1;
 }
 #endif
 ')
@@ -293,27 +284,12 @@ class System
 
 			return display;
 		}
-		#elseif (flash || html5)
+		#elseif (html5)
 		if (id == 0)
 		{
 			var display = new Display();
 			display.id = 0;
 			display.name = "Generic Display";
-
-			#if flash
-			display.dpi = Capabilities.screenDPI;
-			display.currentMode = new DisplayMode(Std.int(Capabilities.screenResolutionX), Std.int(Capabilities.screenResolutionY), 60, ARGB32);
-			#elseif (js && html5)
-			// var div = Browser.document.createElement ("div");
-			// div.style.width = "1in";
-			// Browser.document.body.appendChild (div);
-			// var ppi = Browser.document.defaultView.getComputedStyle (div, null).getPropertyValue ("width");
-			// Browser.document.body.removeChild (div);
-			// display.dpi = Std.parseFloat (ppi);
-			display.dpi = 96 * Browser.window.devicePixelRatio;
-			display.currentMode = new DisplayMode(Browser.window.screen.width, Browser.window.screen.height, 60, ARGB32);
-			#end
-
 			display.supportedModes = [display.currentMode];
 			display.bounds = new Rectangle(0, 0, display.currentMode.width, display.currentMode.height);
 			return display;
@@ -328,9 +304,8 @@ class System
 	**/
 	public static function getTimer():Int
 	{
-		#if flash
-		return flash.Lib.getTimer();
-		#elseif ((js && !nodejs) || electron)
+
+		#if ((js && !nodejs) || electron)
 		return Std.int(Browser.window.performance.now());
 		#elseif (lime_cffi && !macro)
 		return cast NativeCFFI.lime_system_get_timer();
@@ -342,8 +317,7 @@ class System
 		return 0;
 		#end
 	}
-
-		public static function getTimerPrecise():Float
+	public static function getTimerPrecise():Float
 	{
 		#if ((js && !nodejs) || electron)
 		return Browser.window.performance.now();
@@ -383,10 +357,7 @@ class System
 			#elseif mac
 			Sys.command("/usr/bin/open", [path]);
 			#elseif linux
-			// generally `xdg-open` should work in every distro
-			var cmd = Sys.command("xdg-open", [path, "&"]);
-			// run old command JUST IN CASE it fails, which it shouldn't
-			if (cmd != 0) cmd = Sys.command("/usr/bin/xdg-open", [path, "&"]);
+			Sys.command("/usr/bin/xdg-open", [path]);
 			#elseif (js && html5)
 			Browser.window.open(path, "_blank");
 			#elseif flash
@@ -616,7 +587,7 @@ class System
 	{
 		return (value == "true");
 	}
-	
+
 	@:noCompletion private static function __registerEntryPoint(projectName:String, entryPoint:Function):Void
 	{
 		if (__applicationEntryPoint == null)
@@ -905,7 +876,7 @@ class System
 	}
 }
 
-#if (haxe_ver >= 4.0) enum #else @:enum #end abstract SystemDirectory(Int) from Int to Int from UInt to UInt
+#if (haxe_ver >= 4.0) private enum #else @:enum private #end abstract SystemDirectory(Int) from Int to Int from UInt to UInt
 {
 	var APPLICATION = 0;
 	var APPLICATION_STORAGE = 1;
