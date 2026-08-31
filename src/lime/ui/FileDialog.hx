@@ -1,4 +1,4 @@
-﻿package lime.ui;
+package lime.ui;
 
 import haxe.io.Bytes;
 import haxe.io.Path;

@@ -1,4 +1,4 @@
-﻿package lime.ui;
+package lime.ui;
 
 enum FileDialogType
 {
