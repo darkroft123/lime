@@ -2,15 +2,6 @@
 .DS_Store
 .DS_Store?
 Export/
-ndll/*/lime*
-ndll/*/liblime*
-ndll/*/*.hdll
-ndll/*/*.hash
-ndll/*/*.so
-ndll/*/*.dylib
-ndll/*/*.lib
-ndll/*/hl*
-ndll/*/*.dll
 templates/bin/hl/*
 project/all_objs
 project/obj
@@ -32,3 +23,4 @@ package-lock.json
 node_modules
 !templates/**/node_modules
 .vscode/
+
