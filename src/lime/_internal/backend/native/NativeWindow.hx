@@ -722,7 +722,8 @@ class NativeWindow
 		if (handle != null)
 		{
 			#if (!macro && lime_cffi)
-			return NativeCFFI.lime_window_set_vsync_mode(handle, value ? 1 : 0);
+			if (NativeCFFI.lime_window_set_vsync_mode != null)
+				return NativeCFFI.lime_window_set_vsync_mode(handle, value ? 1 : 0);
 			#end
 		}
 
