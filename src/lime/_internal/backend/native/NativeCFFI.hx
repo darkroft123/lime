@@ -413,7 +413,7 @@ class NativeCFFI
 	private static var lime_bytes_read_file = new cpp.Callable<String->cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_bytes_read_file", "soo",
 		false));
 	private static var lime_bytes_write_file = new cpp.Callable<String->cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_bytes_write_file", "sov",
-		false));
+		true));
 	private static var lime_cffi_get_native_pointer = new cpp.Callable<cpp.Object->Float>(cpp.Prime._loadPrime("lime", "lime_cffi_get_native_pointer", "od",
 		false));
 	private static var lime_clipboard_event_manager_register = new cpp.Callable<cpp.Object->cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime",
@@ -480,9 +480,9 @@ class NativeCFFI
 	private static var lime_gamepad_get_device_name = new cpp.Callable<Int->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_gamepad_get_device_name", "io",
 		false));
 	private static var lime_gamepad_rumble = new cpp.Callable<Int->Float->Float->Int->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_gamepad_rumble", "iddiv",
-		false));
+		true));
 	private static var lime_gamepad_set_led = new cpp.Callable<Int->Int->Int->Int->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_gamepad_set_led", "iiiiv",
-		false));
+		true));
 	private static var lime_gamepad_event_manager_register = new cpp.Callable<cpp.Object->cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime",
 		"lime_gamepad_event_manager_register", "oov", false));
 	private static var lime_gzip_compress = new cpp.Callable<cpp.Object->cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_gzip_compress", "ooo",
@@ -531,9 +531,9 @@ class NativeCFFI
 	private static var lime_joystick_get_num_buttons = new cpp.Callable<Int->Int>(cpp.Prime._loadPrime("lime", "lime_joystick_get_num_buttons", "ii", false));
 	private static var lime_joystick_get_num_hats = new cpp.Callable<Int->Int>(cpp.Prime._loadPrime("lime", "lime_joystick_get_num_hats", "ii", false));
 	private static var lime_joystick_rumble = new cpp.Callable<Int->Float->Float->Int->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_joystick_rumble", "iddiv",
-		false));
+		true));
 	private static var lime_joystick_set_led = new cpp.Callable<Int->Int->Int->Int->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_joystick_set_led", "iiiiv",
-		false));
+		true));
 	private static var lime_joystick_event_manager_register = new cpp.Callable<cpp.Object->cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime",
 		"lime_joystick_event_manager_register", "oov", false));
 	private static var lime_jpeg_decode_bytes = new cpp.Callable<cpp.Object->Bool->cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime",
@@ -597,7 +597,7 @@ class NativeCFFI
 	private static var lime_window_alert = new cpp.Callable<cpp.Object->Int->String->String->cpp.Object->Int>(cpp.Prime._loadPrime("lime", "lime_window_alert", "oissoi",
 		false));
 	private static var lime_window_set_vsync_mode = new cpp.Callable<cpp.Object->Int->Bool>(cpp.Prime._loadPrime("lime", "lime_window_set_vsync_mode", "oib",
-		false));
+		true));
 	private static var lime_window_close = new cpp.Callable<cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_window_close", "ov", false));
 	private static var lime_window_context_flip = new cpp.Callable<cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_window_context_flip", "ov",
 		false));
@@ -666,7 +666,7 @@ class NativeCFFI
 	private static var lime_window_set_visible = new cpp.Callable<cpp.Object->Bool->Bool>(cpp.Prime._loadPrime("lime", "lime_window_set_visible", "obb",
 		false));
 	private static var lime_window_set_always_on_top = new cpp.Callable<cpp.Object->Bool->Bool>(cpp.Prime._loadPrime("lime", "lime_window_set_always_on_top", "obb",
-		false));
+		true));
 	private static var lime_window_warp_mouse = new cpp.Callable<cpp.Object->Int->Int->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_window_warp_mouse",
 		"oiiv", false));
 	private static var lime_window_event_manager_register = new cpp.Callable<cpp.Object->cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime",
@@ -1539,21 +1539,21 @@ class NativeCFFI
 	private static var lime_jni_call_member = new cpp.Callable<cpp.Object->cpp.Object->cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime",
 		"lime_jni_call_member", "oooo", false));
 	private static var lime_jni_call_static = new cpp.Callable<cpp.Object->cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_jni_call_static", "ooo",
-		false));
+		true));
 	private static var lime_jni_create_field = new cpp.Callable<String->String->String->Bool->cpp.Object>(cpp.Prime._loadPrime("lime",
 		"lime_jni_create_field", "sssbo", false));
 	private static var lime_jni_create_method = new cpp.Callable<String->String->String->Bool->Bool->cpp.Object>(cpp.Prime._loadPrime("lime",
 		"lime_jni_create_method", "sssbbo", false));
 	private static var lime_jni_get_env = new cpp.Callable<Void->Float>(cpp.Prime._loadPrime("lime", "lime_jni_get_env", "d", true));
 	private static var lime_jni_get_member = new cpp.Callable<cpp.Object->cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_jni_get_member", "ooo",
-		false));
+		true));
 	private static var lime_jni_get_static = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_jni_get_static", "oo", true));
 	private static var lime_jni_post_ui_callback = new cpp.Callable<cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_jni_post_ui_callback", "ov",
-		false));
+		true));
 	private static var lime_jni_set_member = new cpp.Callable<cpp.Object->cpp.Object->cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime",
 		"lime_jni_set_member", "ooov", false));
 	private static var lime_jni_set_static = new cpp.Callable<cpp.Object->cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_jni_set_static", "oov",
-		false));
+		true));
 	#end
 	#end
 	#if !cpp
@@ -1909,7 +1909,7 @@ class NativeCFFI
 	private static var lime_al_is_extension_present = new cpp.Callable<String->Bool>(cpp.Prime._loadPrime("lime", "lime_al_is_extension_present", "sb",
 		false));
 	private static var lime_alc_is_extension_present = new cpp.Callable<cpp.Object->String->Bool>(cpp.Prime._loadPrime("lime", "lime_alc_is_extension_present", "osb",
-		false));
+		true));
 	private static var lime_al_is_source = new cpp.Callable<cpp.Object->Bool>(cpp.Prime._loadPrime("lime", "lime_al_is_source", "ob", false));
 	private static var lime_al_listener3f = new cpp.Callable<Int->cpp.Float32->cpp.Float32->cpp.Float32->cpp.Void>(cpp.Prime._loadPrime("lime",
 		"lime_al_listener3f", "ifffv", false));
@@ -1977,11 +1977,11 @@ class NativeCFFI
 	private static var lime_alc_capture_open_device = new cpp.Callable<String->Int->Int->Int->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_alc_capture_open_device",
 		"siiio", false));
 	private static var lime_alc_capture_close_device = new cpp.Callable<cpp.Object->Bool>(cpp.Prime._loadPrime("lime", "lime_alc_capture_close_device", "ob",
-		false));
+		true));
 	private static var lime_alc_capture_start = new cpp.Callable<cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_alc_capture_start", "ov",
-		false));
+		true));
 	private static var lime_alc_capture_stop = new cpp.Callable<cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_alc_capture_stop", "ov",
-		false));
+		true));
 	private static var lime_alc_capture_samples = new cpp.Callable<cpp.Object->cpp.Object->Int->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_alc_capture_samples",
 		"ooiv", false));
 	private static var lime_alc_get_doublev_soft = new cpp.Callable<cpp.Object->Int->Int->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_alc_get_doublev_soft",
@@ -7235,41 +7235,41 @@ class NativeCFFI
 	private static var lime_drlibs_flac_from_bytes = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_flac_from_bytes",
 		"oo", false));
 	private static var lime_drlibs_flac_from_file = new cpp.Callable<String->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_flac_from_file", "so",
-		false));
+		true));
 	private static var lime_drlibs_flac_info = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_flac_info", "oo",
-		false));
+		true));
 	private static var lime_drlibs_flac_seek = new cpp.Callable<cpp.Object->cpp.Object->cpp.Object->Int>(cpp.Prime._loadPrime("lime",
 		"lime_drlibs_flac_seek", "oooi", false));
 	private static var lime_drlibs_flac_tell = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_flac_tell", "oo", true));
 	private static var lime_drlibs_flac_total = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_flac_total", "oo",
-		false));
+		true));
 	private static var lime_drlibs_mp3_decode = new cpp.Callable<cpp.Object->cpp.Object->Int->Int->Int>(cpp.Prime._loadPrime("lime",
 		"lime_drlibs_mp3_decode", "ooiii", false));
 	private static var lime_drlibs_mp3_from_bytes = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_mp3_from_bytes",
 		"oo", false));
 	private static var lime_drlibs_mp3_from_file = new cpp.Callable<String->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_mp3_from_file", "so",
-		false));
+		true));
 	private static var lime_drlibs_mp3_info = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_mp3_info", "oo",
-		false));
+		true));
 	private static var lime_drlibs_mp3_seek = new cpp.Callable<cpp.Object->cpp.Object->cpp.Object->Int>(cpp.Prime._loadPrime("lime",
 		"lime_drlibs_mp3_seek", "oooi", false));
-	private static var lime_drlibs_mp3_tell = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_mp3_tell", "oo", false));
+	private static var lime_drlibs_mp3_tell = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_mp3_tell", "oo", true));
 	private static var lime_drlibs_mp3_total = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_mp3_total", "oo",
-		false));
-	private static var lime_drlibs_mp3_uninit = new cpp.Callable<cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_drlibs_mp3_uninit", "ov", false));
+		true));
+	private static var lime_drlibs_mp3_uninit = new cpp.Callable<cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_drlibs_mp3_uninit", "ov", true));
 	private static var lime_drlibs_wav_decode = new cpp.Callable<cpp.Object->cpp.Object->Int->Int->Int->Int>(cpp.Prime._loadPrime("lime",
 		"lime_drlibs_wav_decode", "ooiiii", false));
 	private static var lime_drlibs_wav_from_bytes = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_wav_from_bytes",
 		"oo", false));
 	private static var lime_drlibs_wav_from_file = new cpp.Callable<String->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_wav_from_file", "so",
-		false));
+		true));
 	private static var lime_drlibs_wav_info = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_wav_info", "oo",
-		false));
+		true));
 	private static var lime_drlibs_wav_seek = new cpp.Callable<cpp.Object->cpp.Object->cpp.Object->Int>(cpp.Prime._loadPrime("lime",
 		"lime_drlibs_wav_seek", "oooi", false));
 	private static var lime_drlibs_wav_tell = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_wav_tell", "oo", true));
 	private static var lime_drlibs_wav_total = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_drlibs_wav_total", "oo",
-		false));
+		true));
 	private static var lime_drlibs_wav_uninit = new cpp.Callable<cpp.Object->cpp.Void>(cpp.Prime._loadPrime("lime", "lime_drlibs_wav_uninit", "ov", true));
 	#end
 	#end
@@ -7443,13 +7443,13 @@ class NativeCFFI
 	private static var lime_opus_file_from_bytes = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_opus_file_from_bytes",
 		"oo", false));
 	private static var lime_opus_file_from_file = new cpp.Callable<String->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_opus_file_from_file", "so",
-		false));
+		true));
 	private static var lime_opus_file_seek = new cpp.Callable<cpp.Object->cpp.Object->cpp.Object->Int>(cpp.Prime._loadPrime("lime",
 		"lime_opus_file_seek", "oooi", false));
 	private static var lime_opus_file_seekable = new cpp.Callable<cpp.Object->Bool>(cpp.Prime._loadPrime("lime", "lime_opus_file_seekable", "ob", true));
 	private static var lime_opus_file_tell = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_opus_file_tell", "oo", true));
 	private static var lime_opus_file_total = new cpp.Callable<cpp.Object->cpp.Object>(cpp.Prime._loadPrime("lime", "lime_opus_file_total", "oo",
-		false));
+		true));
 	#end
 	#end
 	#if (neko || cppia)
