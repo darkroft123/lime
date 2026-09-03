@@ -1,7 +1,6 @@
 package lime.app;
 
 import lime.graphics.RenderContext;
-import lime.system.Orientation;
 import lime.system.System;
 import lime.ui.Gamepad;
 import lime.ui.GamepadAxis;
@@ -54,10 +53,6 @@ class Application extends Module
 		Dispatched when a new window has been created by this application
 	**/
 	public var onCreateWindow = new Event<Window->Void>();
-
-	public var onDisplayOrientationChange = new Event<Int->Orientation->Void>();
-
-	public var deviceOrientation(get, never):Orientation;
 
 	/**
 		The Preloader for the current Application
@@ -646,11 +641,6 @@ class Application extends Module
 	@:noCompletion private inline function get_windows():Array<Window>
 	{
 		return __windows;
-	}
-
-	@:noCompletion private function get_deviceOrientation():Orientation
-	{
-		return UNKNOWN;
 	}
 }
 

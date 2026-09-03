@@ -36,10 +36,6 @@ import lime.utils.UInt8Array;
 @:access(lime.graphics.RenderContext)
 @:access(lime.system.DisplayMode)
 @:access(lime.ui.Window)
-#if windows
-// Declares SetProcessDPIAware() for the untyped call in new().
-@:cppFileCode('#include <windows.h>')
-#end
 class NativeWindow
 {
 	public var handle:Dynamic;
@@ -60,23 +56,6 @@ class NativeWindow
 	public function new(parent:Window)
 	{
 		this.parent = parent;
-
-		#if windows
-		// Must happen BEFORE the window is created, so lime positions and sizes
-		// it using physical pixels. Calling this after creation (old DPIFix) made
-		// the window off-center on displays with scaling above 100%.
-		// The saved option cannot be read here (flixel does not exist yet), so a
-		// marker file written by DPIFix signals that the user opted out.
-		// Only sys.io.File is used here on purpose: sys.io.FileSystem does not
-		// resolve in this Haxe installation.
-		var dpiOff:Bool = false;
-		try {
-			dpiOff = StringTools.trim(sys.io.File.getContent(lime.system.System.applicationStorageDirectory + "dpi_off.flag")) == "off";
-		} catch (e:Dynamic) {}
-		if (!dpiOff) {
-			untyped __cpp__("SetProcessDPIAware()");
-		}
-		#end
 
 		cursor = DEFAULT;
 		displayMode = new DisplayMode(0, 0, 0, 0);
@@ -128,10 +107,6 @@ class NativeWindow
 
 		#if (!macro && lime_cffi)
 		handle = NativeCFFI.lime_window_create(parent.application.__backend.handle, width, height, flags, title);
-
-		#if (DARK_MODE_WINDOW && !macro)
-			funkin.backend.utils.NativeAPI.setDarkMode(title, true);
-		#end
 
 		if (handle != null)
 		{
@@ -208,7 +183,7 @@ class NativeWindow
 		if (handle != null)
 		{
 			#if (!macro && lime_cffi)
-			NativeCFFI.lime_window_alert(handle, 0, message, title, null);
+			NativeCFFI.lime_window_alert(handle, message, title);
 			#end
 		}
 	}
@@ -322,6 +297,18 @@ class NativeWindow
 		}
 
 		return mouseLock;
+	}
+
+	public function getOpacity():Float
+	{
+		if (handle != null)
+		{
+			#if (!macro && lime_cffi)
+			return NativeCFFI.lime_window_get_opacity(handle);
+			#end
+		}
+
+		return 1.0;
 	}
 
 	public function getTextInputEnabled():Bool
@@ -474,7 +461,6 @@ class NativeWindow
 		}
 	}
 
-	#if (lime >= "8.1.0")
 	public function setMinSize(width:Int, height:Int):Void
 	{
 		if (handle != null)
@@ -494,7 +480,6 @@ class NativeWindow
 			#end
 		}
 	}
-	#end
 
 	public function setBorderless(value:Bool):Bool
 	{
@@ -675,6 +660,16 @@ class NativeWindow
 		return value;
 	}
 
+	public function setOpacity(value:Float):Void
+	{
+		if (handle != null)
+		{
+			#if (!macro && lime_cffi)
+			NativeCFFI.lime_window_set_opacity(handle, value);
+			#end
+		}
+	}
+
 	public function setResizable(value:Bool):Bool
 	{
 		if (handle != null)
@@ -704,7 +699,6 @@ class NativeWindow
 		return value;
 	}
 
-	#if (lime >= "8.1.0")
 	public function setVisible(value:Bool):Bool
 	{
 		if (handle != null)
@@ -722,37 +716,12 @@ class NativeWindow
 		if (handle != null)
 		{
 			#if (!macro && lime_cffi)
-			if (NativeCFFI.lime_window_set_vsync_mode != null)
-				return NativeCFFI.lime_window_set_vsync_mode(handle, value ? 1 : 0);
+			return NativeCFFI.lime_window_set_vsync(handle, value);
 			#end
 		}
 
 		return value;
 	}
-
-
-	public function getOpacity():Float
-	{
-		if (handle != null)
-		{
-			#if (!macro && lime_cffi)
-			return NativeCFFI.lime_window_get_opacity(handle);
-			#end
-		}
-
-		return 1.0;
-	}
-
-	public function setOpacity(value:Float):Void
-	{
-		if (handle != null)
-		{
-			#if (!macro && lime_cffi)
-			NativeCFFI.lime_window_set_opacity(handle, value);
-			#end
-		}
-	}
-	#end
 
 	public function warpMouse(x:Int, y:Int):Void
 	{
@@ -762,7 +731,7 @@ class NativeWindow
 	}
 }
 
-enum abstract MouseCursorType(Int) from Int to Int
+#if (haxe_ver >= 4.0) private enum #else @:enum private #end abstract MouseCursorType(Int) from Int to Int
 {
 	var HIDDEN = 0;
 	var ARROW = 1;
@@ -779,7 +748,7 @@ enum abstract MouseCursorType(Int) from Int to Int
 	var WAIT_ARROW = 12;
 }
 
-enum abstract WindowFlags(Int)
+#if (haxe_ver >= 4.0) private enum #else @:enum private #end abstract WindowFlags(Int)
 {
 	var WINDOW_FLAG_FULLSCREEN = 0x00000001;
 	var WINDOW_FLAG_BORDERLESS = 0x00000002;

@@ -35,7 +35,5 @@ class Display
 	**/
 	public var supportedModes(default, null):Array<DisplayMode>;
 
-	public var orientation(default, null):Orientation;
-
 	@:noCompletion private function new() {}
 }
