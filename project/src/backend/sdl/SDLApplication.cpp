@@ -683,6 +683,7 @@ namespace lime {
 				case SDL_MOUSEMOTION:
 
 					mouseEvent.type = MOUSE_MOVE;
+					mouseEvent.windowID = event->motion.windowID;
 					mouseEvent.x = event->motion.x;
 					mouseEvent.y = event->motion.y;
 					mouseEvent.movementX = event->motion.xrel;
@@ -694,6 +695,7 @@ namespace lime {
 					SDL_CaptureMouse (SDL_TRUE);
 
 					mouseEvent.type = MOUSE_DOWN;
+					mouseEvent.windowID = event->button.windowID;
 					mouseEvent.button = event->button.button - 1;
 					mouseEvent.x = event->button.x;
 					mouseEvent.y = event->button.y;
@@ -705,6 +707,7 @@ namespace lime {
 					SDL_CaptureMouse (SDL_FALSE);
 
 					mouseEvent.type = MOUSE_UP;
+					mouseEvent.windowID = event->button.windowID;
 					mouseEvent.button = event->button.button - 1;
 					mouseEvent.x = event->button.x;
 					mouseEvent.y = event->button.y;
@@ -714,6 +717,7 @@ namespace lime {
 				case SDL_MOUSEWHEEL:
 
 					mouseEvent.type = MOUSE_WHEEL;
+					mouseEvent.windowID = event->wheel.windowID;
 
 					if (event->wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
 
@@ -730,7 +734,6 @@ namespace lime {
 
 			}
 
-			mouseEvent.windowID = event->button.windowID;
 			MouseEvent::Dispatch (&mouseEvent);
 
 		}
