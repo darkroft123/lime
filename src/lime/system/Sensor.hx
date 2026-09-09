@@ -1,7 +1,5 @@
 package lime.system;
 
-import lime.app.Event;
-
 #if !lime_debug
 @:fileXml('tags="haxe,release"')
 @:noDebug
@@ -12,13 +10,14 @@ class Sensor
 	private static var sensors = new Array<Sensor>();
 
 	public var id:Int;
-	public var onUpdate = new Event<Float->Float->Float->Void>();
+	public var onUpdate:Dynamic;
 	public var type:SensorType;
 
 	@:noCompletion private function new(type:SensorType, id:Int)
 	{
 		this.type = type;
 		this.id = id;
+		this.onUpdate = null;
 	}
 
 	public static function getSensors(type:SensorType = null):Array<Sensor>
